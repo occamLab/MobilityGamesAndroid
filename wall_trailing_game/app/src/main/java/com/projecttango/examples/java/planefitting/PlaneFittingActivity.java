@@ -540,15 +540,15 @@ public class PlaneFittingActivity extends Activity implements View.OnTouchListen
         }
 
         TangoPoseData depthToColorPose = TangoSupport.getPoseAtTime(
-                rgbTimestamp,
-                TangoPoseData.COORDINATE_FRAME_CAMERA_DEPTH,
-                TangoPoseData.COORDINATE_FRAME_CAMERA_COLOR,
-                TangoSupport.TANGO_SUPPORT_ENGINE_TANGO,
-                TangoSupport.TANGO_SUPPORT_ENGINE_TANGO,
-                TangoSupport.ROTATION_IGNORED);
+            rgbTimestamp,
+            TangoPoseData.COORDINATE_FRAME_CAMERA_DEPTH,
+            TangoPoseData.COORDINATE_FRAME_CAMERA_COLOR,
+            TangoSupport.TANGO_SUPPORT_ENGINE_TANGO,
+            TangoSupport.TANGO_SUPPORT_ENGINE_TANGO,
+            TangoSupport.ROTATION_IGNORED);
         if (depthToColorPose.statusCode != TangoPoseData.POSE_VALID) {
             Log.d(TAG, "Could not get a valid pose from depth camera"
-                    + "to color camera at time " + rgbTimestamp);
+                + "to color camera at time " + rgbTimestamp);
             return null;
         }
 
@@ -745,7 +745,7 @@ public class PlaneFittingActivity extends Activity implements View.OnTouchListen
      */
     private void showRequestPermissionRationale() {
         final AlertDialog dialog = new AlertDialog.Builder(this)
-                .setMessage("Java Plane Fitting Example requires camera permission")
+                .setMessage("Wall Trailing Game requires camera permission")
                 .setPositiveButton("Ok", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
@@ -782,7 +782,7 @@ public class PlaneFittingActivity extends Activity implements View.OnTouchListen
         if (hasCameraPermission()) {
             bindTangoService();
         } else {
-            Toast.makeText(this, "Java Plane Fitting Example requires camera permission",
+            Toast.makeText(this, "Wall Trailing Game requires camera permission",
                     Toast.LENGTH_LONG).show();
         }
     }
