@@ -475,8 +475,9 @@ public class PlaneFittingActivity extends Activity implements View.OnTouchListen
 
                 // get largest plane
                 int mostInliers = 0;
-                float[] us = {0.2f, 0.4f, 0.6f, 0.8f};
-                float[] vs = {0.2f, 0.4f, 0.6f, 0.8f};
+                int planesUsed = 0;
+                float[] us = {0.5f, 0.4f, 0.6f, 0.2f, 0.8f};
+                float[] vs = {0.5f, 0.4f, 0.6f, 0.2f, 0.8f};
                 for (float u : us) {
                     for (float v : vs) {
                         try {
@@ -489,8 +490,8 @@ public class PlaneFittingActivity extends Activity implements View.OnTouchListen
                                     (double) planeInOdom[2],
                                     (double) planeInOdom[3],
                             };
-//                            System.out.printf("??? X: %f Y: %f Z: %f\n", planeModel.planeModel[0], planeModel.planeModel[1], planeModel.planeModel[2]);
-//                            System.out.printf("odom X: %f Y: %f Z: %f\n", planeInOdom[0], planeInOdom[1], planeInOdom[2]);
+//                            Log.w(TAG, String.format("depth X: %f Y: %f Z: %f\n", planeModel.planeModel[0], planeModel.planeModel[1], planeModel.planeModel[2]));
+//                            Log.w(TAG, String.format("odom  X: %f Y: %f Z: %f\n", planeInOdom[0], planeInOdom[1], planeInOdom[2]));
 
                             // Choose walls (not ceilings) + largest plane (the one with most inliers)
                             int nInliers = numInliers(pointCloud.points, planeModel.planeModel);
@@ -499,44 +500,30 @@ public class PlaneFittingActivity extends Activity implements View.OnTouchListen
                                 mostInliers = nInliers;
                                 mDepthTPlane = convertPlaneModelToMatrix(planeModel);
                                 double newdist = planeDistance(planeInOdomDouble, odomPose.translation);
-                                System.out.println("Distance to Wall: " + Double.toString(newdist));
+                                Log.w(TAG, "Distance to Wall: " + Double.toString(newdist));
+                                planesUsed++;
                             }
 
                         } catch(TangoException t){
-//                            Toast.makeText(getApplicationContext(),
-//                                    R.string.failed_measurement,
-//                                    Toast.LENGTH_SHORT).show();
-//                            Log.e(TAG, getString(R.string.failed_measurement), t);
+                            // Failed to fit plane.
                         } catch(SecurityException t){
                             Toast.makeText(getApplicationContext(),
                                     R.string.failed_permissions,
                                     Toast.LENGTH_SHORT).show();
-//                            Log.e(TAG, getString(R.string.failed_permissions), t);
+                            Log.e(TAG, getString(R.string.failed_permissions), t);
                         }
                     }
 
                 }
-            }
 
-//            try {
-//                // Fit a plane on the clicked point using the latest point cloud data.
-//                // Synchronize against concurrent access to the RGB timestamp in the OpenGL thread
-//                // and a possible service disconnection due to an onPause event.
-//                synchronized (this) {
-//                    mDepthTPlane = doFitPlane(u, v, mRgbTimestampGlThread);
-//                }
-//
-//            } catch (TangoException t) {
-//                Toast.makeText(getApplicationContext(),
-//                        R.string.failed_measurement,
-//                        Toast.LENGTH_SHORT).show();
-//                Log.e(TAG, getString(R.string.failed_measurement), t);
-//            } catch (SecurityException t) {
-//                Toast.makeText(getApplicationContext(),
-//                        R.string.failed_permissions,
-//                        Toast.LENGTH_SHORT).show();
-//                Log.e(TAG, getString(R.string.failed_permissions), t);
-//            }
+                if (planesUsed == 0) {
+                    Toast.makeText(getApplicationContext(),
+                            R.string.failed_measurement,
+                            Toast.LENGTH_SHORT).show();
+                    Log.e(TAG, getString(R.string.failed_measurement));
+                    mDepthTPlane = null;
+                }
+            }
         }
         return true;
     }
@@ -544,10 +531,9 @@ public class PlaneFittingActivity extends Activity implements View.OnTouchListen
     /**
      * Use the Tango Support Library with point cloud data to calculate the plane
      * of the world feature pointed at the location the camera is looking.
-     * It returns the transform of the fitted plane in a double array.
+     * It returns the IntersectionPoint and the PlaneModel as a pair.
      */
     private IntersectionPointPlaneModelPair doFitPlane(float u, float v, double rgbTimestamp, TangoPointCloudData pointCloud) {
-//        TangoPointCloudData pointCloud = mPointCloudManager.getLatestPointCloud();
 
         if (pointCloud == null) {
             return null;
@@ -578,7 +564,6 @@ public class PlaneFittingActivity extends Activity implements View.OnTouchListen
 
         mPlanePlacedTimestamp = mRgbTimestampGlThread;
         return intersectionPointPlaneModelPair;
-//        return convertPlaneModelToMatrix(intersectionPointPlaneModelPair);
     }
 
     private float[] convertPlaneModelToMatrix(IntersectionPointPlaneModelPair planeModel) {
@@ -677,8 +662,8 @@ public class PlaneFittingActivity extends Activity implements View.OnTouchListen
 
     /**
      * calculates p_twiddle = T_transpose * p
-     * where T is transform matrix from depth to odom
-     * and p is [a,b,c,d] plane params, in the depth camera frame
+     * where T_tranpose is the transpose of the transform matrix from depth to odom
+     * and p is [a,b,c,d] plane params, in the depth camera frame.
      */
     private float[] transformPlaneNormal(
             double[] depthNormal,
