@@ -35,7 +35,6 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.pm.PackageManager;
-import android.hardware.Camera;
 import android.hardware.display.DisplayManager;
 import android.opengl.Matrix;
 import android.os.Bundle;
@@ -47,16 +46,20 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Toast;
 
-import org.rajawali3d.math.Matrix4;
 import org.rajawali3d.scene.ASceneFrameCallback;
 import org.rajawali3d.view.SurfaceView;
 
+import java.nio.FloatBuffer;
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.projecttango.tangosupport.TangoPointCloudManager;
 import com.projecttango.tangosupport.TangoSupport;
 import com.projecttango.tangosupport.TangoSupport.IntersectionPointPlaneModelPair;
+
+import static android.opengl.Matrix.multiplyMV;
+import static android.opengl.Matrix.transposeM;
+
 
 /**
  * An example showing how to use the Tango APIs to create an augmented reality application
@@ -366,12 +369,12 @@ public class PlaneFittingActivity extends Activity implements View.OnTouchListen
                                 // measurement was acquired.
                                 TangoSupport.TangoMatrixTransformData openglTDepthArr =
                                         TangoSupport.getMatrixTransformAtTime(
-                                            mPlanePlacedTimestamp,
-                                            TangoPoseData.COORDINATE_FRAME_AREA_DESCRIPTION,
-                                            TangoPoseData.COORDINATE_FRAME_CAMERA_DEPTH,
-                                            TangoSupport.TANGO_SUPPORT_ENGINE_OPENGL,
-                                            TangoSupport.TANGO_SUPPORT_ENGINE_TANGO,
-                                            TangoSupport.ROTATION_IGNORED);
+                                                mPlanePlacedTimestamp,
+                                                TangoPoseData.COORDINATE_FRAME_AREA_DESCRIPTION,
+                                                TangoPoseData.COORDINATE_FRAME_CAMERA_DEPTH,
+                                                TangoSupport.TANGO_SUPPORT_ENGINE_OPENGL,
+                                                TangoSupport.TANGO_SUPPORT_ENGINE_TANGO,
+                                                TangoSupport.ROTATION_IGNORED);
 
                                 if (openglTDepthArr.statusCode == TangoPoseData.POSE_VALID) {
                                     mRenderer.updateObjectPose(openglTDepthArr.matrix,
@@ -441,29 +444,99 @@ public class PlaneFittingActivity extends Activity implements View.OnTouchListen
     @Override
     public boolean onTouch(View view, MotionEvent motionEvent) {
         if (motionEvent.getAction() == MotionEvent.ACTION_UP) {
-            // Calculate click location in u,v (0;1) coordinates.
-            float u = motionEvent.getX() / view.getWidth();
-            float v = motionEvent.getY() / view.getHeight();
+            // Synchronize against concurrent access to the RGB timestamp in the OpenGL thread
+            // and a possible service disconnection due to an onPause event.
+            synchronized (this) {
 
-            try {
-                // Fit a plane on the clicked point using the latest point cloud data.
-                // Synchronize against concurrent access to the RGB timestamp in the OpenGL thread
-                // and a possible service disconnection due to an onPause event.
-                synchronized (this) {
-                    mDepthTPlane = doFitPlane(u, v, mRgbTimestampGlThread);
+                // Get X, Y, Z of position
+                TangoPoseData odomPose = TangoSupport.getPoseAtTime(
+                        mRgbTimestampGlThread,
+                        TangoPoseData.COORDINATE_FRAME_START_OF_SERVICE,
+                        TangoPoseData.COORDINATE_FRAME_DEVICE,
+                        TangoSupport.TANGO_SUPPORT_ENGINE_TANGO,
+                        TangoSupport.TANGO_SUPPORT_ENGINE_TANGO,
+                        TangoSupport.ROTATION_IGNORED);
+                if (odomPose.statusCode != TangoPoseData.POSE_VALID) {
+                    Log.d(TAG, "Could not get a valid pose from depth camera"
+                            + "to color camera at time " + mRgbTimestampGlThread);
+                    return false;
                 }
 
-            } catch (TangoException t) {
-                Toast.makeText(getApplicationContext(),
-                        R.string.failed_measurement,
-                        Toast.LENGTH_SHORT).show();
-                Log.e(TAG, getString(R.string.failed_measurement), t);
-            } catch (SecurityException t) {
-                Toast.makeText(getApplicationContext(),
-                        R.string.failed_permissions,
-                        Toast.LENGTH_SHORT).show();
-                Log.e(TAG, getString(R.string.failed_permissions), t);
+                TangoPointCloudData pointCloud = mPointCloudManager.getLatestPointCloud();
+
+                // Matrix transforming depth frame to odom frame
+                TangoSupport.TangoMatrixTransformData depthTodom = TangoSupport.getMatrixTransformAtTime(
+                        mRgbTimestampGlThread,
+                        TangoPoseData.COORDINATE_FRAME_CAMERA_DEPTH,
+                        TangoPoseData.COORDINATE_FRAME_START_OF_SERVICE,
+                        TangoSupport.TANGO_SUPPORT_ENGINE_TANGO,
+                        TangoSupport.TANGO_SUPPORT_ENGINE_TANGO,
+                        TangoSupport.ROTATION_IGNORED);
+
+                // get largest plane
+                int mostInliers = 0;
+                float[] us = {0.2f, 0.4f, 0.6f, 0.8f};
+                float[] vs = {0.2f, 0.4f, 0.6f, 0.8f};
+                for (float u : us) {
+                    for (float v : vs) {
+                        try {
+                            IntersectionPointPlaneModelPair planeModel = doFitPlane(u, v, mRgbTimestampGlThread, pointCloud);
+
+                            float[] planeInOdom = transformPlaneNormal(planeModel.planeModel, depthTodom);
+                            double[] planeInOdomDouble = {
+                                    (double) planeInOdom[0],
+                                    (double) planeInOdom[1],
+                                    (double) planeInOdom[2],
+                                    (double) planeInOdom[3],
+                            };
+//                            System.out.printf("??? X: %f Y: %f Z: %f\n", planeModel.planeModel[0], planeModel.planeModel[1], planeModel.planeModel[2]);
+//                            System.out.printf("odom X: %f Y: %f Z: %f\n", planeInOdom[0], planeInOdom[1], planeInOdom[2]);
+
+                            // Choose walls (not ceilings) + largest plane (the one with most inliers)
+                            int nInliers = numInliers(pointCloud.points, planeModel.planeModel);
+                            if ((Math.abs(planeInOdom[2]) < 0.04) && (nInliers > mostInliers)) {
+
+                                mostInliers = nInliers;
+                                mDepthTPlane = convertPlaneModelToMatrix(planeModel);
+                                double newdist = planeDistance(planeInOdomDouble, odomPose.translation);
+                                System.out.println("Distance to Wall: " + Double.toString(newdist));
+                            }
+
+                        } catch(TangoException t){
+//                            Toast.makeText(getApplicationContext(),
+//                                    R.string.failed_measurement,
+//                                    Toast.LENGTH_SHORT).show();
+//                            Log.e(TAG, getString(R.string.failed_measurement), t);
+                        } catch(SecurityException t){
+                            Toast.makeText(getApplicationContext(),
+                                    R.string.failed_permissions,
+                                    Toast.LENGTH_SHORT).show();
+//                            Log.e(TAG, getString(R.string.failed_permissions), t);
+                        }
+                    }
+
+                }
             }
+
+//            try {
+//                // Fit a plane on the clicked point using the latest point cloud data.
+//                // Synchronize against concurrent access to the RGB timestamp in the OpenGL thread
+//                // and a possible service disconnection due to an onPause event.
+//                synchronized (this) {
+//                    mDepthTPlane = doFitPlane(u, v, mRgbTimestampGlThread);
+//                }
+//
+//            } catch (TangoException t) {
+//                Toast.makeText(getApplicationContext(),
+//                        R.string.failed_measurement,
+//                        Toast.LENGTH_SHORT).show();
+//                Log.e(TAG, getString(R.string.failed_measurement), t);
+//            } catch (SecurityException t) {
+//                Toast.makeText(getApplicationContext(),
+//                        R.string.failed_permissions,
+//                        Toast.LENGTH_SHORT).show();
+//                Log.e(TAG, getString(R.string.failed_permissions), t);
+//            }
         }
         return true;
     }
@@ -473,38 +546,39 @@ public class PlaneFittingActivity extends Activity implements View.OnTouchListen
      * of the world feature pointed at the location the camera is looking.
      * It returns the transform of the fitted plane in a double array.
      */
-    private float[] doFitPlane(float u, float v, double rgbTimestamp) {
-        TangoPointCloudData pointCloud = mPointCloudManager.getLatestPointCloud();
+    private IntersectionPointPlaneModelPair doFitPlane(float u, float v, double rgbTimestamp, TangoPointCloudData pointCloud) {
+//        TangoPointCloudData pointCloud = mPointCloudManager.getLatestPointCloud();
 
         if (pointCloud == null) {
             return null;
         }
 
         TangoPoseData depthToColorPose = TangoSupport.getPoseAtTime(
-            rgbTimestamp,
-            TangoPoseData.COORDINATE_FRAME_CAMERA_DEPTH,
-            TangoPoseData.COORDINATE_FRAME_CAMERA_COLOR,
-            TangoSupport.TANGO_SUPPORT_ENGINE_TANGO,
-            TangoSupport.TANGO_SUPPORT_ENGINE_TANGO,
-            TangoSupport.ROTATION_IGNORED);
+                rgbTimestamp,
+                TangoPoseData.COORDINATE_FRAME_CAMERA_DEPTH,
+                TangoPoseData.COORDINATE_FRAME_CAMERA_COLOR,
+                TangoSupport.TANGO_SUPPORT_ENGINE_TANGO,
+                TangoSupport.TANGO_SUPPORT_ENGINE_TANGO,
+                TangoSupport.ROTATION_IGNORED);
         if (depthToColorPose.statusCode != TangoPoseData.POSE_VALID) {
             Log.d(TAG, "Could not get a valid pose from depth camera"
-                + "to color camera at time " + rgbTimestamp);
+                    + "to color camera at time " + rgbTimestamp);
             return null;
         }
 
         // Plane model is in depth camera space due to input poses.
         IntersectionPointPlaneModelPair intersectionPointPlaneModelPair =
-            TangoSupport.fitPlaneModelNearPoint(pointCloud,
-                new double[] {0.0, 0.0, 0.0},
-                new double[] {0.0, 0.0, 0.0, 1.0},
-                u, v,
-                mDisplayRotation,
-                depthToColorPose.translation,
-                depthToColorPose.rotation);
+                TangoSupport.fitPlaneModelNearPoint(pointCloud,
+                        new double[] {0.0, 0.0, 0.0},
+                        new double[] {0.0, 0.0, 0.0, 1.0},
+                        u, v,
+                        mDisplayRotation,
+                        depthToColorPose.translation,
+                        depthToColorPose.rotation);
 
         mPlanePlacedTimestamp = mRgbTimestampGlThread;
-        return convertPlaneModelToMatrix(intersectionPointPlaneModelPair);
+        return intersectionPointPlaneModelPair;
+//        return convertPlaneModelToMatrix(intersectionPointPlaneModelPair);
     }
 
     private float[] convertPlaneModelToMatrix(IntersectionPointPlaneModelPair planeModel) {
@@ -590,6 +664,64 @@ public class PlaneFittingActivity extends Activity implements View.OnTouchListen
     }
 
     /**
+     * Finds the distance to a plane model in the odom reference frame to the phone's position
+     * the Equation used is abs(a*x + b*y + c*z + d) / sqrt(a^2 + b^2 + c^2)
+     * where a, b, c, and d are the plane_model in the form (ax+by+cz+d = 0)
+     * and x, y, and z are the position of the phone
+     */
+    private double planeDistance(double[] normal, double[] xyz) {
+        double result = (Math.abs(normal[0]*xyz[0] + normal[1]*xyz[1] + normal[2]*xyz[2] + normal[3]) /
+                Math.sqrt(Math.pow(normal[0], 2) + Math.pow(normal[1], 2) + Math.pow(normal[2], 2)));
+        return result;
+    }
+
+    /**
+     * calculates p_twiddle = T_transpose * p
+     * where T is transform matrix from depth to odom
+     * and p is [a,b,c,d] plane params, in the depth camera frame
+     */
+    private float[] transformPlaneNormal(
+            double[] depthNormal,
+            TangoSupport.TangoMatrixTransformData depthTodom) {
+
+        float[] depthNormalF = {
+                (float) depthNormal[0],
+                (float) depthNormal[1],
+                (float) depthNormal[2],
+                (float) depthNormal[3]
+        };
+
+        float[] depthTodomTranspose = new float[16];
+        transposeM(depthTodomTranspose, 0, depthTodom.matrix, 0);
+
+        float[] odomNormal = new float[4];
+        multiplyMV(odomNormal, 0, depthTodomTranspose, 0, depthNormalF, 0);
+
+        return odomNormal;
+    }
+
+    private int numInliers(FloatBuffer points, double[] normal) {
+        int count = 0;
+        int idx = 0;
+        float[] quad = new float[4];
+        while (points.hasRemaining()) {
+            quad[idx] = points.get();
+            idx++;
+
+            // filled a quadruplet
+            if (idx > 3) {
+                // calculate if inlier
+                double planeEq = normal[0]*quad[0] + normal[1]*quad[1] + normal[2]*quad[2] + normal[3];
+                if (Math.abs(planeEq) < 0.001) {
+                    count++;
+                }
+                idx = 0;
+            }
+        }
+        return count;
+    }
+
+    /**
      * Check to see that we have the necessary permissions for this app; ask for them if we don't.
      *
      * @return True if we have the necessary permissions, false if we don't.
@@ -628,7 +760,7 @@ public class PlaneFittingActivity extends Activity implements View.OnTouchListen
      */
     private void showRequestPermissionRationale() {
         final AlertDialog dialog = new AlertDialog.Builder(this)
-                .setMessage("Wall Trailing Game requires camera permission")
+                .setMessage("Java Plane Fitting Example requires camera permission")
                 .setPositiveButton("Ok", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
@@ -665,7 +797,7 @@ public class PlaneFittingActivity extends Activity implements View.OnTouchListen
         if (hasCameraPermission()) {
             bindTangoService();
         } else {
-            Toast.makeText(this, "Wall Trailing Game requires camera permission",
+            Toast.makeText(this, "Java Plane Fitting Example requires camera permission",
                     Toast.LENGTH_LONG).show();
         }
     }
