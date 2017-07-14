@@ -117,22 +117,26 @@ public class PlaneFittingActivity extends Activity {
         super.onCreate(savedInstanceState);
         mSurfaceView = new SurfaceView(this);
         mRenderer = new PlaneFittingRenderer(this);
+        setContentView(mSurfaceView);
         mSurfaceView.setSurfaceRenderer(mRenderer);
         mSurfaceView.setOnTouchListener(new OnSwipeTouchListener(this) {
             @Override
-            public void onSwipeRight(View view) {
+            public void onSwipeRight() {
+//                View view = (View) findViewById(R.id.Activity_Config);
                 Log.w(TAG, "SWIPED RIGHT");
-                Intent i =  new Intent(view.getContext(), ConfigActivity.class);
+                Intent i =  new Intent(my_context, ConfigActivity.class);
                 startActivity(i);
             }
 
             @Override
-            public void onSwipeLeft(View view) {
+            public void onSwipeLeft() {
+                View view = (View) findViewById(R.id.Activity_Config);
                 Log.w(TAG, "SWIPED LEFT");
+                Intent i =  new Intent(view.getContext(), ConfigActivity.class);
+                startActivity(i);
             }
         });
         mPointCloudManager = new TangoPointCloudManager();
-        setContentView(mSurfaceView);
 
         DisplayManager displayManager = (DisplayManager) getSystemService(DISPLAY_SERVICE);
         if (displayManager != null) {
