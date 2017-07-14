@@ -122,7 +122,6 @@ public class PlaneFittingActivity extends Activity {
         mSurfaceView.setOnTouchListener(new OnSwipeTouchListener(this) {
             @Override
             public void onSwipeRight() {
-//                View view = (View) findViewById(R.id.Activity_Config);
                 Log.w(TAG, "SWIPED RIGHT");
                 Intent i =  new Intent(my_context, ConfigActivity.class);
                 startActivity(i);
@@ -130,9 +129,8 @@ public class PlaneFittingActivity extends Activity {
 
             @Override
             public void onSwipeLeft() {
-                View view = (View) findViewById(R.id.Activity_Config);
                 Log.w(TAG, "SWIPED LEFT");
-                Intent i =  new Intent(view.getContext(), ConfigActivity.class);
+                Intent i =  new Intent(my_context, ConfigActivity.class);
                 startActivity(i);
             }
         });
