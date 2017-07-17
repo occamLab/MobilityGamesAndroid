@@ -5,11 +5,13 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.media.midi.MidiDeviceInfo;
 import android.media.midi.MidiManager;
 import android.media.midi.MidiReceiver;
 import android.net.Uri;
 import android.nfc.Tag;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.widget.AdapterView;
@@ -21,14 +23,18 @@ import android.widget.Toast;
 
 import com.mobileer.miditools.MidiConstants;
 import com.mobileer.miditools.MidiInputPortSelector;
+import com.mobileer.miditools.MidiOutputPortConnectionSelector;
+import com.mobileer.miditools.MidiTools;
 import com.mobileer.miditools.MusicKeyboardView;
+import com.mobileer.miditools.synth.LatencyController;
 
 import java.io.IOException;
+import java.util.Random;
 
 import static android.app.PendingIntent.getActivity;
 
 public class ConfigActivity extends Activity {
-    private static final String TAG = ConfigActivity.class.getSimpleName();
+    public static final String TAG = ConfigActivity.class.getSimpleName();
     Button mButton = null;
     private boolean mIsPaused = true;
     private Intent mServiceIntent;
@@ -37,11 +43,14 @@ public class ConfigActivity extends Activity {
     // MIDI attributes
     private MidiInputPortSelector mKeyboardReceiverSelector;
     private MidiManager mMidiManager;
-    private int mChannel; // ranges from 0 to 15
-    private int[] mPrograms = new int[MidiConstants.MAX_CHANNELS]; // ranges from 0 to 127
+    private int mLowestNoteOffset = 48; // Based on the lowest note of MidiKeyboardView
     private byte[] mByteBuffer = new byte[3];
     private static final int DEFAULT_VELOCITY = 64;
 
+
+    // From MIDI Synth
+//    private MidiOutputPortConnectionSelector mPortSelector;
+    private LatencyController mLatencyController;
 
     @Override
     protected void onCreate(Bundle saveIntentState) {
@@ -107,9 +116,13 @@ public class ConfigActivity extends Activity {
                     .show();
         }
 
-        // Channel Spinners not needed
-//        Spinner spinner = (Spinner) findViewById(R.id.spinner_channels);
-//        spinner.setOnItemSelectedListener(new ChannelSpinnerActivity());
+        // MIDI SYNTH
+        mLatencyController = MidiSynthDeviceService.getLatencyController();
+        if (mLatencyController.isLowLatencySupported()) {
+            // Start out with low latency.
+            mLatencyController.setLowLatencyEnabled(true);
+            mLatencyController.setAutoSizeEnabled(true);
+        }
 
 
     }
@@ -150,6 +163,10 @@ public class ConfigActivity extends Activity {
 //        }
 //    }
 
+    private void noteOff(int channel, int pitch, int velocity) {
+        midiCommand(MidiConstants.STATUS_NOTE_OFF + channel, pitch, velocity);
+    }
+
     private void setupMidi() {
         mMidiManager = (MidiManager) getSystemService(MIDI_SERVICE);
         if (mMidiManager == null) {
@@ -162,23 +179,13 @@ public class ConfigActivity extends Activity {
         mKeyboardReceiverSelector = new MidiInputPortSelector(mMidiManager,
                 this, R.id.spinner_receivers);
 
-        // KEYBOARD not neccessary.
-//        mKeyboard = (MusicKeyboardView) findViewById(R.id.musicKeyboardView);
-//        mKeyboard.addMusicKeyListener(new MusicKeyboardView.MusicKeyListener() {
-//            @Override
-//            public void onKeyDown(int keyIndex) {
-//                noteOn(mChannel, keyIndex, DEFAULT_VELOCITY);
-//            }
-//
-//            @Override
-//            public void onKeyUp(int keyIndex) {
-//                noteOff(mChannel, keyIndex, DEFAULT_VELOCITY);
-//            }
-//        });
-    }
-
-    private void noteOff(int channel, int pitch, int velocity) {
-        midiCommand(MidiConstants.STATUS_NOTE_OFF + channel, pitch, velocity);
+        // FROM MIDI SYNTH
+        //        MidiDeviceInfo synthInfo =  MidiTools.findDevice(mMidiManager, "Occam",
+//                "Synth");
+//        int portIndex = 0;
+//        mPortSelector = new MidiOutputPortConnectionSelector(mMidiManager, this,
+//                R.id.spinner_synth_sender, synthInfo, portIndex);
+//        mPortSelector.setConnectedListener(new MyPortsConnectedListener());
     }
 
     private void noteOn(int channel, int pitch, int velocity) {
@@ -239,7 +246,43 @@ public class ConfigActivity extends Activity {
          * Handle Intents here.
          */
             mWallDist = intent.getDoubleExtra(Constants.WALLDISTANCE, 0.0);
-            Log.e(TAG, Double.toString(mWallDist));
+//            Log.e(TAG, Double.toString(mWallDist));
+
+            double mMaxFreqDist = 3.0; // Distance at which frequency maxes out
+            double mRewardSoundDist = 0.5;
+
+            // Divide the range between reward and maxfreq into 12 semitones
+            double semiToneInterval = (mMaxFreqDist - mRewardSoundDist) / 12.0;
+
+            int semiTone = 0;
+            while (mWallDist > mRewardSoundDist + (semiToneInterval * semiTone)) {
+                semiTone++;
+            }
+
+            if (semiTone >= 12) {
+                Log.e(TAG, "Step closer to wall to hear the notes!");
+            }
+
+//            // Magic Calculations from Wall Game in ROS
+//            double mMaxFreq = 2092.8;
+//            double mMinFreq = 130.8;
+//            double mMagicNum = 65.4;
+//            double multiplier = mMaxFreq /
+//                    Math.pow(2, (mMaxFreqDist - mRewardSoundDist));
+//            double freq = Math.max(
+//                    Math.min(multiplier*Math.pow(mWallDist-mRewardSoundDist, 2) + mMagicNum*2, mMaxFreq),
+//                    mMagicNum*2
+//            )*2;
+//            Log.e(TAG, Double.toString(freq));
+
+            noteOn(0, mLowestNoteOffset + semiTone, DEFAULT_VELOCITY);
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            noteOff(0, mLowestNoteOffset + semiTone, DEFAULT_VELOCITY);
+
         }
     }
 }
