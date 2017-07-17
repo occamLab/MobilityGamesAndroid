@@ -193,6 +193,7 @@ public class ConfigActivity extends Activity {
     @Override
     public void onDestroy() {
         closeSynthResources();
+        stopService(mServiceIntent);
         super.onDestroy();
     }
 
@@ -222,6 +223,18 @@ public class ConfigActivity extends Activity {
          */
             double walldist = intent.getDoubleExtra(Constants.WALLDISTANCE, 0.0);
             Log.e(TAG, Double.toString(walldist));
+
+            int quantizedNote = 51;
+//            int quantizedNote = (int) walldist;
+            int mChannel = 0;
+            noteOn(mChannel, quantizedNote, DEFAULT_VELOCITY);
+//            try {
+//                Thread.sleep(3000);
+//            } catch(InterruptedException ex) {
+//                ex.printStackTrace();
+//            }
+//            noteOff(mChannel, quantizedNote, DEFAULT_VELOCITY);
+
         }
     }
 }

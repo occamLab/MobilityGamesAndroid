@@ -171,6 +171,7 @@ public class WallSensingService extends IntentService {
                         startupTango();
                         TangoSupport.initialize(mTango);
                         mIsConnected = true;
+                        Log.e(TAG, "Service has started. Boogaa");
                     } catch (TangoOutOfDateException e) {
                         Log.e(TAG, getString(R.string.exception_out_of_date), e);
                     } catch (TangoErrorException e) {
@@ -188,6 +189,7 @@ public class WallSensingService extends IntentService {
         super.onDestroy();
         mTango.disconnect();
         mIsConnected = false;
+        Log.w(TAG, "WallSensingService shutdown successfully");
     }
 
     /**
