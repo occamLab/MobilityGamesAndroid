@@ -1,10 +1,16 @@
 package com.projecttango.examples.java.planefitting;
 
 import android.app.Activity;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.media.midi.MidiManager;
 import android.media.midi.MidiReceiver;
+import android.net.Uri;
+import android.nfc.Tag;
 import android.os.Bundle;
+import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.widget.AdapterView;
 import android.widget.Button;
@@ -19,9 +25,14 @@ import com.mobileer.miditools.MusicKeyboardView;
 
 import java.io.IOException;
 
+import static android.app.PendingIntent.getActivity;
+
 public class ConfigActivity extends Activity {
     private static final String TAG = ConfigActivity.class.getSimpleName();
     Button mButton = null;
+    private Intent mServiceIntent;
+
+    // MIDI attributes
     private MidiInputPortSelector mKeyboardReceiverSelector;
     private MidiManager mMidiManager;
     private int mChannel; // ranges from 0 to 15
@@ -38,10 +49,38 @@ public class ConfigActivity extends Activity {
         mButton = (Button) findViewById(R.id.goCamera);
         mButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                Intent i = new Intent(v.getContext(), PlaneFittingActivity.class);
-                startActivity(i);
+
+                // Start Plane Fitting Activity
+//                Intent i = new Intent(v.getContext(), PlaneFittingActivity.class);
+//                startActivity(i);
+
+                /*
+                 * Creates a new Intent to start the WallSensingService
+                 * IntentService. Passes a URI in the
+                 * Intent's "data" field.
+                 */
+                mServiceIntent = new Intent(v.getContext(), WallSensingService.class);
+//                mServiceIntent.setData(Uri.parse(dataUrl));
+                startService(mServiceIntent);
             }
+
         });
+
+        // The filter's action is BROADCAST_ACTION
+        IntentFilter statusIntentFilter = new IntentFilter(
+                Constants.BROADCAST_WALLDISTANCE);
+
+        // Adds a data filter for the HTTP scheme
+//            statusIntentFilter.addDataScheme("http");
+
+        // Instantiates a new DownloadStateReceiver
+        DownloadStateReceiver mDownloadStateReceiver =
+                new DownloadStateReceiver();
+        // Registers the DownloadStateReceiver and its intent filters
+        LocalBroadcastManager.getInstance(this).registerReceiver(
+                mDownloadStateReceiver,
+                statusIntentFilter);
+
 
         // MIDI SETUP
         if (getPackageManager().hasSystemFeature(PackageManager.FEATURE_MIDI)) {
@@ -169,4 +208,21 @@ public class ConfigActivity extends Activity {
         }
     }
 
+    // Broadcast receiver for receiving status updates from the IntentService
+    private class DownloadStateReceiver extends BroadcastReceiver
+    {
+        // Prevents instantiation
+        private DownloadStateReceiver() {
+        }
+        // Called when the BroadcastReceiver gets an Intent it's registered to receive
+        @Override
+        public void onReceive(Context context, Intent intent) {
+        /*
+         * Handle Intents here.
+         */
+            double walldist = intent.getDoubleExtra(Constants.WALLDISTANCE, 0.0);
+            Log.e(TAG, Double.toString(walldist));
+        }
+    }
 }
+
