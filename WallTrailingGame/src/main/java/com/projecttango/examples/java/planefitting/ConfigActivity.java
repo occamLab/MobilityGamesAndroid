@@ -31,6 +31,7 @@ public class ConfigActivity extends Activity {
     private static final String TAG = ConfigActivity.class.getSimpleName();
     Button mButton = null;
     private Intent mServiceIntent;
+    double mWallDist;
 
     // MIDI attributes
     private MidiInputPortSelector mKeyboardReceiverSelector;
@@ -221,20 +222,8 @@ public class ConfigActivity extends Activity {
         /*
          * Handle Intents here.
          */
-            double walldist = intent.getDoubleExtra(Constants.WALLDISTANCE, 0.0);
-            Log.e(TAG, Double.toString(walldist));
-
-            int quantizedNote = 51;
-//            int quantizedNote = (int) walldist;
-            int mChannel = 0;
-            noteOn(mChannel, quantizedNote, DEFAULT_VELOCITY);
-//            try {
-//                Thread.sleep(3000);
-//            } catch(InterruptedException ex) {
-//                ex.printStackTrace();
-//            }
-//            noteOff(mChannel, quantizedNote, DEFAULT_VELOCITY);
-
+            mWallDist = intent.getDoubleExtra(Constants.WALLDISTANCE, 0.0);
+            Log.e(TAG, Double.toString(mWallDist));
         }
     }
 }
