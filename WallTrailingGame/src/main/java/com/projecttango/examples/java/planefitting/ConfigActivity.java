@@ -51,10 +51,6 @@ public class ConfigActivity extends Activity {
         mButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
 
-                // Start Plane Fitting Activity
-//                Intent i = new Intent(v.getContext(), PlaneFittingActivity.class);
-//                startActivity(i);
-
                 /*
                  * Creates a new Intent to start the WallSensingService
                  * IntentService. Passes a URI in the
