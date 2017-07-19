@@ -306,7 +306,8 @@ public class ConfigActivity extends Activity {
         Runnable runnable = new Runnable() {
             @Override
             public void run() {
-                while(mIsPause != true){
+                Log.e(TAG,"Started Thread");
+                while(mIsPaused != true){
                     if(mWallDist < distSelect && mWallDist > 0){
                         if(mediaPlayer.isPlaying() != true){
                             mediaPlayer.start();
@@ -316,31 +317,14 @@ public class ConfigActivity extends Activity {
                         mediaPlayer.pause();
                     }
                 }
+                Log.e(TAG,"Ended the Thread");
             }
         };
 
-//        while(distSelect < 5.0){
-//            if(mWallDist < distSelect && mWallDist > 0){
-//                if(mediaPlayer.isPlaying()){
-//                    mediaPlayer.start();
-//                }
-//            }
-//            else{
-//                mediaPlayer.pause();
-//            }
-//        }
-    }
+        Thread runThread = new Thread(runnable);
+        runThread.start();
 
-    public void play(MediaPlayer media) {
 
-        media.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
-            @Override
-            public void onPrepared(MediaPlayer mp) {
-                if(mp.isPlaying()){
-                    mp.start();
-                }
-            }
-        });
     }
 }
 
