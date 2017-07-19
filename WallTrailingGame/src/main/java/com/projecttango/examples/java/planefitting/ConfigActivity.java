@@ -36,11 +36,13 @@ public class ConfigActivity extends Activity {
     Button mButton = null;
     private boolean mIsPaused = true;
     private Intent mServiceIntent;
-    double mWallDist = 0.0;
+    double mWallDist = -1.0;
     Button selectButton = null;
     Spinner mSelectSpinner = null;
     MediaPlayer mediaPlayer = null;
     double distSelect = 0.0;
+    Uri uriSound;
+    Context contextSound;
 
     // MIDI attributes
     private MidiInputPortSelector mKeyboardReceiverSelector;
@@ -143,8 +145,9 @@ public class ConfigActivity extends Activity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 
         if(resultCode == RESULT_OK && requestCode == 10){
-            Uri uriSound = data.getData();
-            play(this, uriSound);
+            uriSound = data.getData();
+            contextSound = this;
+            runGame(contextSound, uriSound);
         }
     }
 
@@ -261,7 +264,7 @@ public class ConfigActivity extends Activity {
     }
 
     // Broadcast receiver for receiving status updates from the IntentService
-    public class DownloadStateReceiver extends BroadcastReceiver
+    private class DownloadStateReceiver extends BroadcastReceiver
     {
         // Prevents instantiation
         private DownloadStateReceiver() {
@@ -279,58 +282,63 @@ public class ConfigActivity extends Activity {
         }
     }
 
-    public void play(Context context, Uri uri) {
-        System.out.println("In the play function");
-        mediaPlayer =  new MediaPlayer();
-        if (context.checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE)
-                != PackageManager.PERMISSION_GRANTED) {
-
+    public void runGame(Context context, Uri uri){
+        if (context.checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
             // Should we show an explanation?
-            if (shouldShowRequestPermissionRationale(
-                    Manifest.permission.READ_EXTERNAL_STORAGE)) {
+            if (shouldShowRequestPermissionRationale(Manifest.permission.READ_EXTERNAL_STORAGE)) {
                 // Explain to the user why we need to read the contacts
             }
-
-            requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},
-                    11331);
-
+            requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, 11331);
             // MY_PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE is an
             // app-defined int constant that should be quite unique
-
-//            return;
         }
-        //MediaPlayer mediaPlayer = MediaPlayer.create(context, uri);
+        mediaPlayer =  new MediaPlayer();
         setVolumeControlStream(AudioManager.STREAM_MUSIC);
         mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
         try {
             mediaPlayer.setDataSource(context, uri);
             mediaPlayer.prepareAsync();
-            mediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
-                @Override
-                public void onPrepared(MediaPlayer mp) {
-                    if(mWallDist > distSelect){
-                        mp.pause();
-                    }else{
-                        mp.start();
-                    }
-                }
-            });
         }
         catch (IOException e) {
             e.printStackTrace();
+        }
+
+        Runnable runnable = new Runnable() {
+            @Override
+            public void run() {
+                while(mIsPause != true){
+                    if(mWallDist < distSelect && mWallDist > 0){
+                        if(mediaPlayer.isPlaying() != true){
+                            mediaPlayer.start();
+                        }
+                    }
+                    else{
+                        mediaPlayer.pause();
+                    }
+                }
+            }
         };
 
-        selectButton = (Button) findViewById(R.id.selectMusic);
-        selectButton.setOnClickListener(new View.OnClickListener() {
+//        while(distSelect < 5.0){
+//            if(mWallDist < distSelect && mWallDist > 0){
+//                if(mediaPlayer.isPlaying()){
+//                    mediaPlayer.start();
+//                }
+//            }
+//            else{
+//                mediaPlayer.pause();
+//            }
+//        }
+    }
+
+    public void play(MediaPlayer media) {
+
+        media.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
             @Override
-            public void onClick(View view) {
-                if (mediaPlayer.isPlaying() == true) {
-                    mediaPlayer.stop();
-                }else{
-                    mediaPlayer.stop();
+            public void onPrepared(MediaPlayer mp) {
+                if(mp.isPlaying()){
+                    mp.start();
                 }
-                Intent intent = new Intent(Intent.ACTION_PICK, android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI);
-                startActivityForResult(intent, 10);
             }
         });
     }
