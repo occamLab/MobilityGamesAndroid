@@ -1,11 +1,14 @@
 package com.projecttango.examples.java.planefitting;
 
+import android.Manifest;
 import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.media.midi.MidiDeviceInfo;
+import android.media.AudioManager;
+import android.media.MediaPlayer;
 import android.media.midi.MidiManager;
 import android.media.midi.MidiReceiver;
 import android.net.Uri;
@@ -34,11 +37,18 @@ import java.util.Random;
 import static android.app.PendingIntent.getActivity;
 
 public class ConfigActivity extends Activity {
+
     public static final String TAG = ConfigActivity.class.getSimpleName();
     Button mButton = null;
     private boolean mIsPaused = true;
     private Intent mServiceIntent;
-    double mWallDist;
+    double mWallDist = -1.0;
+    Button selectButton = null;
+    Spinner mSelectSpinner = null;
+    MediaPlayer mediaPlayer = null;
+    double distSelect = 0.0;
+    Uri uriSound;
+    Context contextSound;
 
     // MIDI attributes
     private MidiInputPortSelector mKeyboardReceiverSelector;
@@ -57,7 +67,10 @@ public class ConfigActivity extends Activity {
         super.onCreate(saveIntentState);
         setContentView(R.layout.activity_config);
 
-        mButton = (Button) findViewById(R.id.goCamera);
+        //Intalizing variable mSelectSpinner
+        mSelectSpinner = (Spinner) findViewById(R.id.spinnerDistance);
+
+        mButton = (Button) findViewById(R.id.startStopButton);
         mButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
 
@@ -67,6 +80,8 @@ public class ConfigActivity extends Activity {
                  * Intent's "data" field.
                  */
                 if (mIsPaused) {
+                    String selected = mSelectSpinner.getSelectedItem().toString();
+                    distSelect = Double.parseDouble(selected);
                     Log.w(TAG, "Starting Wall Sensing Service");
                     mIsPaused = false;
 
@@ -90,6 +105,18 @@ public class ConfigActivity extends Activity {
                 }
             }
 
+        });
+
+
+        //Select the music you want
+        selectButton = (Button) findViewById(R.id.selectMusic);
+        selectButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                mediaPlayer = null;
+                Intent intent = new Intent(Intent.ACTION_PICK, android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI);
+                startActivityForResult(intent, 10);
+            }
         });
 
         // The filter's action is BROADCAST_WALLDISTANCE
@@ -125,6 +152,16 @@ public class ConfigActivity extends Activity {
         }
 
 
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+
+        if(resultCode == RESULT_OK && requestCode == 10){
+            uriSound = data.getData();
+            contextSound = this;
+            runGame(contextSound, uriSound);
+        }
     }
 
     @Override
@@ -282,8 +319,54 @@ public class ConfigActivity extends Activity {
                 e.printStackTrace();
             }
             noteOff(0, mLowestNoteOffset + semiTone, DEFAULT_VELOCITY);
-
+            Log.e(TAG, Double.toString(distSelect));
+            Log.e(TAG, Double.toString(mWallDist));
         }
+    }
+
+    public void runGame(Context context, Uri uri){
+        if (context.checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+            // Should we show an explanation?
+            if (shouldShowRequestPermissionRationale(Manifest.permission.READ_EXTERNAL_STORAGE)) {
+                // Explain to the user why we need to read the contacts
+            }
+            requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, 11331);
+            // MY_PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE is an
+            // app-defined int constant that should be quite unique
+        }
+        mediaPlayer =  new MediaPlayer();
+        setVolumeControlStream(AudioManager.STREAM_MUSIC);
+        mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+        try {
+            mediaPlayer.setDataSource(context, uri);
+            mediaPlayer.prepareAsync();
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        Runnable runnable = new Runnable() {
+            @Override
+            public void run() {
+                Log.e(TAG,"Started Thread");
+                while(mIsPaused != true){
+                    if(mWallDist < distSelect && mWallDist > 0){
+                        if(mediaPlayer.isPlaying() != true){
+                            mediaPlayer.start();
+                        }
+                    }
+                    else{
+                        mediaPlayer.pause();
+                    }
+                }
+                Log.e(TAG,"Ended the Thread");
+            }
+        };
+
+        Thread runThread = new Thread(runnable);
+        runThread.start();
+
+
     }
 }
 

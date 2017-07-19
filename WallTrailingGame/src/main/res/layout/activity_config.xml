@@ -5,19 +5,39 @@
     android:layout_height="match_parent"
     android:id="@+id/Activity_Config">
 
+    <ImageView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:id="@+id/backGround"
+        android:background="#808080" />
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/wallSensing"
+        android:text="Wall Sensing Game"
+        android:textSize="30sp"
+        android:textColor="#000000"
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true"/>
+
     <Button
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:id="@+id/goCamera"
-        android:text="Go To Camera"
-        android:padding="30dp"/>
+        android:id="@+id/startStopButton"
+        android:text="Start Game"
+        android:padding="30dp"
+        android:background="#FFFFFF"
+        android:layout_below="@id/wallSensing"
+        android:layout_centerHorizontal="true"/>
 
     <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:id="@+id/midiLayout"
         android:layout_marginTop="20dp"
-        android:layout_below="@+id/goCamera"
-        android:orientation="horizontal">
+        android:layout_below="@+id/startStopButton"
+        android:orientation="horizontal"
+        android:layout_centerHorizontal="true">
 
         <TextView
             android:id="@+id/text_receivers"
@@ -31,5 +51,30 @@
             android:layout_height="wrap_content"
             android:entries="@array/receivers" />
     </LinearLayout>
+
+    <Spinner
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#1DA38C"
+        android:id="@+id/spinnerDistance"
+        android:layout_centerInParent="true"
+        android:layout_margin="20dp"
+        android:padding="40dp"
+        android:drawSelectorOnTop="true"
+        android:entries="@array/distance">
+    </Spinner>
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/selectMusic"
+        android:layout_below="@id/spinnerDistance"
+        android:layout_centerHorizontal="true"
+        android:text="Select Music"
+        android:textSize="30sp"
+        android:textColor="#000000"
+        android:background="#00EE00"
+        android:padding="30dp"
+        android:layout_margin="10dp"/>
 
 </RelativeLayout>
