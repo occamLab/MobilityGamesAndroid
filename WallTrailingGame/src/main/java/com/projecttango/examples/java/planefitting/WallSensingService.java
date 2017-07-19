@@ -1,8 +1,10 @@
 package com.projecttango.examples.java.planefitting;
 
 import android.app.IntentService;
+import android.content.BroadcastReceiver;
 import android.content.Intent;
 import android.content.Context;
+import android.content.IntentFilter;
 import android.opengl.Matrix;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
@@ -10,7 +12,6 @@ import android.view.Surface;
 import android.widget.Toast;
 
 import com.google.atap.tangoservice.Tango;
-import com.google.atap.tangoservice.TangoCameraIntrinsics;
 import com.google.atap.tangoservice.TangoConfig;
 import com.google.atap.tangoservice.TangoCoordinateFramePair;
 import com.google.atap.tangoservice.TangoErrorException;
@@ -34,96 +35,56 @@ import static android.opengl.Matrix.transposeM;
 /**
  * An {@link IntentService} subclass for handling asynchronous task requests in
  * a service on a separate handler thread.
- * <p>
- * TODO: Customize class - update intent actions, extra parameters and static
- * helper methods.
  */
 public class WallSensingService extends IntentService {
-    // TODO: Rename actions, choose action names that describe tasks that this
-    // IntentService can perform, e.g. ACTION_FETCH_NEW_ITEMS
-    private static final String ACTION_FOO = "com.projecttango.examples.java.planefitting.action.FOO";
-    private static final String ACTION_BAZ = "com.projecttango.examples.java.planefitting.action.BAZ";
-
-    // TODO: Rename parameters
-    private static final String EXTRA_PARAM1 = "com.projecttango.examples.java.planefitting.extra.PARAM1";
-    private static final String EXTRA_PARAM2 = "com.projecttango.examples.java.planefitting.extra.PARAM2";
 
     private static final String TAG = WallSensingService.class.getSimpleName();
     private Tango mTango;
     private TangoConfig mConfig;
-    private boolean mIsConnected = false;
     private TangoPointCloudManager mPointCloudManager = new TangoPointCloudManager();
-    private float[] mDepthTPlane;
     private double mLastPointCloudTimestamp;
     private int mDisplayRotation = Surface.ROTATION_0;
 
     public WallSensingService() {
         super("WallSensingService");
+
+        // The filter's action is BROADCAST_WALLSENSINGSERVICE_STOP
+        IntentFilter statusIntentFilter = new IntentFilter(
+                Constants.BROADCAST_WALLSENSINGSERVICE_STOP);
+
+        // Instantiates a new DownloadStateReceiver
+        WallSensingService.ShutdownServiceReceiver mShutdownServiceReceiver =
+                new WallSensingService.ShutdownServiceReceiver();
+        // Registers the DownloadStateReceiver and its intent filters
+        LocalBroadcastManager.getInstance(this).registerReceiver(
+                mShutdownServiceReceiver,
+                statusIntentFilter);
     }
 
-    /**
-     * Starts this service to perform action Foo with the given parameters. If
-     * the service is already performing a task this action will be queued.
-     *
-     * @see IntentService
-     */
-    // TODO: Customize helper method
-    public static void startActionFoo(Context context, String param1, String param2) {
-        Intent intent = new Intent(context, WallSensingService.class);
-        intent.setAction(ACTION_FOO);
-        intent.putExtra(EXTRA_PARAM1, param1);
-        intent.putExtra(EXTRA_PARAM2, param2);
-        context.startService(intent);
-    }
-
-    /**
-     * Starts this service to perform action Baz with the given parameters. If
-     * the service is already performing a task this action will be queued.
-     *
-     * @see IntentService
-     */
-    // TODO: Customize helper method
-    public static void startActionBaz(Context context, String param1, String param2) {
-        Intent intent = new Intent(context, WallSensingService.class);
-        intent.setAction(ACTION_BAZ);
-        intent.putExtra(EXTRA_PARAM1, param1);
-        intent.putExtra(EXTRA_PARAM2, param2);
-        context.startService(intent);
+    // Broadcast receiver for receiving shutdown service request from the activity
+    private class ShutdownServiceReceiver extends BroadcastReceiver
+    {
+        // Prevents instantiation
+        private ShutdownServiceReceiver() {
+        }
+        // Called when the BroadcastReceiver gets an Intent it's registered to receive
+        @Override
+        public void onReceive(Context context, Intent intent) {
+        /*
+         * Handle Intents here.
+         */
+            boolean doShutdown = intent.getBooleanExtra(Constants.WALLSENSINGSERVICE_STOP, true);
+            if (doShutdown) {
+                onDestroy();
+            }
+        }
     }
 
     @Override
     protected void onHandleIntent(Intent intent) {
         if (intent != null) {
-//            final String action = intent.getAction();
-//            if (ACTION_FOO.equals(action)) {
-//                final String param1 = intent.getStringExtra(EXTRA_PARAM1);
-//                final String param2 = intent.getStringExtra(EXTRA_PARAM2);
-//                handleActionFoo(param1, param2);
-//            } else if (ACTION_BAZ.equals(action)) {
-//                final String param1 = intent.getStringExtra(EXTRA_PARAM1);
-//                final String param2 = intent.getStringExtra(EXTRA_PARAM2);
-//                handleActionBaz(param1, param2);
-//            }
             bindTangoService();
         }
-    }
-
-    /**
-     * Handle action Foo in the provided background thread with the provided
-     * parameters.
-     */
-    private void handleActionFoo(String param1, String param2) {
-        // TODO: Handle action Foo
-        throw new UnsupportedOperationException("Not yet implemented");
-    }
-
-    /**
-     * Handle action Baz in the provided background thread with the provided
-     * parameters.
-     */
-    private void handleActionBaz(String param1, String param2) {
-        // TODO: Handle action Baz
-        throw new UnsupportedOperationException("Not yet implemented");
     }
 
     /**
@@ -170,7 +131,6 @@ public class WallSensingService extends IntentService {
                         mTango.connect(mConfig);
                         startupTango();
                         TangoSupport.initialize(mTango);
-                        mIsConnected = true;
                         Log.e(TAG, "Service has started. Boogaa");
                     } catch (TangoOutOfDateException e) {
                         Log.e(TAG, getString(R.string.exception_out_of_date), e);
@@ -188,7 +148,6 @@ public class WallSensingService extends IntentService {
     public void onDestroy() {
         super.onDestroy();
         mTango.disconnect();
-        mIsConnected = false;
         Log.w(TAG, "WallSensingService shutdown successfully");
     }
 
@@ -288,7 +247,7 @@ public class WallSensingService extends IntentService {
                         if ((Math.abs(planeInOdom[2]) < 0.04) && (nInliers > mostInliers)) {
 
                             mostInliers = nInliers;
-                            mDepthTPlane = convertPlaneModelToMatrix(planeModel);
+                            float[] depthTPlane = convertPlaneModelToMatrix(planeModel);
                             double newdist = planeDistance(planeInOdomDouble, odomPose.translation);
                             Log.w(TAG, "Distance to Wall: " + Double.toString(newdist));
                             planesUsed++;
@@ -322,7 +281,6 @@ public class WallSensingService extends IntentService {
                         R.string.failed_measurement,
                         Toast.LENGTH_SHORT).show();
                 Log.e(TAG, getString(R.string.failed_measurement));
-                mDepthTPlane = null;
                 return false;
             }
         }

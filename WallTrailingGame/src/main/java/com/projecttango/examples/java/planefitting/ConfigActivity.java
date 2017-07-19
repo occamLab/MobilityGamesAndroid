@@ -30,6 +30,7 @@ import static android.app.PendingIntent.getActivity;
 public class ConfigActivity extends Activity {
     private static final String TAG = ConfigActivity.class.getSimpleName();
     Button mButton = null;
+    private boolean mIsPaused = true;
     private Intent mServiceIntent;
     double mWallDist;
 
@@ -56,14 +57,33 @@ public class ConfigActivity extends Activity {
                  * IntentService. Passes a URI in the
                  * Intent's "data" field.
                  */
-                mServiceIntent = new Intent(v.getContext(), WallSensingService.class);
-//                mServiceIntent.setData(Uri.parse(dataUrl));
-                startService(mServiceIntent);
+                if (mIsPaused) {
+                    Log.w(TAG, "Starting Wall Sensing Service");
+                    mIsPaused = false;
+
+                    // Send work request to do wall sensing with an intent
+                    mServiceIntent = new Intent(v.getContext(), WallSensingService.class);
+                    startService(mServiceIntent);
+                }
+                else {
+                    Log.w(TAG, "Stopping Wall Sensing Service");
+
+                    // Since the original wall sensing intent is a forever running job, we can't
+                    // send another work request action to stop the service. It would forever be
+                    // queued. Instead, we use local broadcasters to communicate the stop request
+                    // as a workaround.
+                    Intent stopServiceIntent =
+                            new Intent(Constants.BROADCAST_WALLSENSINGSERVICE_STOP)
+                                    // Puts the status into the Intent
+                                    .putExtra(Constants.WALLSENSINGSERVICE_STOP, true);
+                    LocalBroadcastManager.getInstance(v.getContext()).sendBroadcast(stopServiceIntent);
+                    mIsPaused = true;
+                }
             }
 
         });
 
-        // The filter's action is BROADCAST_ACTION
+        // The filter's action is BROADCAST_WALLDISTANCE
         IntentFilter statusIntentFilter = new IntentFilter(
                 Constants.BROADCAST_WALLDISTANCE);
 
