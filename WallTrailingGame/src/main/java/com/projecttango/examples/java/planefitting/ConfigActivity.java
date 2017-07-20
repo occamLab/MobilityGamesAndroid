@@ -24,13 +24,13 @@ import android.widget.Toast;
 
 import com.mobileer.miditools.MidiConstants;
 import com.mobileer.miditools.MidiInputPortSelector;
-
+import com.mobileer.miditools.synth.LatencyController;
 
 import java.io.IOException;
 
 public class ConfigActivity extends Activity {
 
-    private static final String TAG = ConfigActivity.class.getSimpleName();
+    public static final String TAG = ConfigActivity.class.getSimpleName();
     Button mButton = null;
     private boolean mIsPaused = true;
     private Intent mServiceIntent;
@@ -38,18 +38,18 @@ public class ConfigActivity extends Activity {
     Button selectButton = null;
     Spinner mSelectSpinner = null;
     MediaPlayer mediaPlayer = null;
-    double distSelect = 1.0;
+    double mRewardSoundDist = 1.0; // Distance at which reward sounds are played
+    double mMaxFreqDist = 5.0; // Distance at which frequency maxes out
     Uri uriSound;
     Context contextSound;
 
     // MIDI attributes
     private MidiInputPortSelector mKeyboardReceiverSelector;
     private MidiManager mMidiManager;
-    private int mChannel; // ranges from 0 to 15
-    private int[] mPrograms = new int[MidiConstants.MAX_CHANNELS]; // ranges from 0 to 127
+    private int mLowestNoteOffset = 48; // Based on the lowest note of MidiKeyboardView
     private byte[] mByteBuffer = new byte[3];
     private static final int DEFAULT_VELOCITY = 64;
-
+    private LatencyController mLatencyController;
 
     @Override
     protected void onCreate(Bundle saveIntentState) {
@@ -61,7 +61,7 @@ public class ConfigActivity extends Activity {
         mSelectSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 Object item = parent.getItemAtPosition(position);
-                distSelect = Double.parseDouble(item.toString());
+                mRewardSoundDist = Double.parseDouble(item.toString());
             }
             public void onNothingSelected(AdapterView<?> parent) {
             }
@@ -84,10 +84,6 @@ public class ConfigActivity extends Activity {
         // The filter's action is BROADCAST_WALLDISTANCE
         IntentFilter statusIntentFilter = new IntentFilter(
                 Constants.BROADCAST_WALLDISTANCE);
-
-        // Adds a data filter for the HTTP scheme
-//            statusIntentFilter.addDataScheme("http");
-
         // Instantiates a new DownloadStateReceiver
         DownloadStateReceiver mDownloadStateReceiver =
                 new DownloadStateReceiver();
@@ -105,9 +101,13 @@ public class ConfigActivity extends Activity {
                     .show();
         }
 
-        // Channel Spinners not needed
-//        Spinner spinner = (Spinner) findViewById(R.id.spinner_channels);
-//        spinner.setOnItemSelectedListener(new ChannelSpinnerActivity());
+        // MIDI SYNTH
+        mLatencyController = MidiSynthDeviceService.getLatencyController();
+        if (mLatencyController.isLowLatencySupported()) {
+            // Start out with low latency.
+            mLatencyController.setLowLatencyEnabled(true);
+            mLatencyController.setAutoSizeEnabled(true);
+        }
 
 
     }
@@ -144,19 +144,9 @@ public class ConfigActivity extends Activity {
         return super.onOptionsItemSelected(item);
     }
 
-
-//    public class ChannelSpinnerActivity implements AdapterView.OnItemSelectedListener {
-//        @Override
-//        public void onItemSelected(AdapterView<?> parent, View view,
-//                                   int pos, long id) {
-//            mChannel = pos & 0x0F;
-//            updateProgramText();
-//        }
-//
-//        @Override
-//        public void onNothingSelected(AdapterView<?> parent) {
-//        }
-//    }
+    private void noteOff(int channel, int pitch, int velocity) {
+        midiCommand(MidiConstants.STATUS_NOTE_OFF + channel, pitch, velocity);
+    }
 
     private void setupMidi() {
         mMidiManager = (MidiManager) getSystemService(MIDI_SERVICE);
@@ -169,24 +159,6 @@ public class ConfigActivity extends Activity {
         // Setup Spinner that selects a MIDI input port.
         mKeyboardReceiverSelector = new MidiInputPortSelector(mMidiManager,
                 this, R.id.spinner_receivers);
-
-        // KEYBOARD not neccessary.
-//        mKeyboard = (MusicKeyboardView) findViewById(R.id.musicKeyboardView);
-//        mKeyboard.addMusicKeyListener(new MusicKeyboardView.MusicKeyListener() {
-//            @Override
-//            public void onKeyDown(int keyIndex) {
-//                noteOn(mChannel, keyIndex, DEFAULT_VELOCITY);
-//            }
-//
-//            @Override
-//            public void onKeyUp(int keyIndex) {
-//                noteOff(mChannel, keyIndex, DEFAULT_VELOCITY);
-//            }
-//        });
-    }
-
-    private void noteOff(int channel, int pitch, int velocity) {
-        midiCommand(MidiConstants.STATUS_NOTE_OFF + channel, pitch, velocity);
     }
 
     private void noteOn(int channel, int pitch, int velocity) {
@@ -234,6 +206,25 @@ public class ConfigActivity extends Activity {
         }
     }
 
+    /*
+     * Returns a semitone pitch, from 0-11, based on distance to the wall
+     */
+    private int pitchFromDistance() {
+        // Divide the range between reward and maxfreq into 12 semitones
+        double semiToneInterval = (mMaxFreqDist - mRewardSoundDist) / 12.0;
+
+        int semiTone = 0;
+        while (mWallDist > mRewardSoundDist + (semiToneInterval * semiTone)) {
+            semiTone++;
+        }
+
+        if (semiTone >= 12) {
+            Log.e(TAG, "Step closer to wall to hear the notes!");
+        }
+
+        return semiTone;
+    }
+
     // Broadcast receiver for receiving status updates from the IntentService
     private class DownloadStateReceiver extends BroadcastReceiver
     {
@@ -247,9 +238,6 @@ public class ConfigActivity extends Activity {
          * Handle Intents here.
          */
             mWallDist = intent.getDoubleExtra(Constants.WALLDISTANCE, 0.0);
-            Log.e(TAG, Double.toString(distSelect));
-            Log.e(TAG, Double.toString(mWallDist));
-
         }
     }
 
@@ -279,7 +267,7 @@ public class ConfigActivity extends Activity {
                         public void run() {
                             Log.e(TAG,"Started Thread");
                             while(mIsPaused != true){
-                                if(mWallDist < distSelect && mWallDist > 0){
+                                if(mWallDist < mRewardSoundDist && mWallDist > 0){
                                     if(mediaPlayer.isPlaying() != true){
                                         Log.e(TAG,"Started Music Play Back");
                                         mediaPlayer.start();
@@ -287,6 +275,14 @@ public class ConfigActivity extends Activity {
                                 }
                                 else{
                                     mediaPlayer.pause();
+                                    int semiTone = pitchFromDistance();
+                                    noteOn(0, mLowestNoteOffset + semiTone, DEFAULT_VELOCITY);
+                                    try {
+                                        Thread.sleep(1000);
+                                    } catch (InterruptedException e) {
+                                        e.printStackTrace();
+                                    }
+                                    noteOff(0, mLowestNoteOffset + semiTone, DEFAULT_VELOCITY);
                                 }
                                 try {
                                     Thread.sleep(10);
@@ -377,8 +373,6 @@ public class ConfigActivity extends Activity {
         catch (IOException e) {
             e.printStackTrace();
         }
-
-
     }
 }
 

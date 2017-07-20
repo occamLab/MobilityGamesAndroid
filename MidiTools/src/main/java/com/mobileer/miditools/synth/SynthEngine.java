@@ -270,6 +270,8 @@ public class SynthEngine extends MidiReceiver {
     public void pitchBend(int channel, int bend) {
         double semitones = (mBendRange * (bend - 0x2000)) / 0x2000;
         mFrequencyScaler = (float) Math.pow(2.0, semitones / 12.0);
+
+        Log.e(TAG, "Frequency: " + Float.toString(mFrequencyScaler));
         Iterator<SynthVoice> iterator = mVoices.values().iterator();
         while (iterator.hasNext()) {
             SynthVoice voice = iterator.next();
