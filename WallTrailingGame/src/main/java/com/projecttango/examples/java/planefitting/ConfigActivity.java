@@ -63,19 +63,16 @@ public class ConfigActivity extends Activity {
         super.onCreate(saveIntentState);
         setContentView(R.layout.activity_config);
 
-        //Intalizing variable mSelectSpinner
-//        mSelectSpinner = (Spinner) findViewById(R.id.spinnerDistance);
-//        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this,
-//                R.array.distance, android.R.layout.s);
-//
-//        mSelectSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-//            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-//                Object item = parent.getItemAtPosition(position);
-//                distSelect = Double.parseDouble(item.toString());
-//            }
-//            public void onNothingSelected(AdapterView<?> parent) {
-//            }
-//        });
+        //ntalizing variable mSelectSpinner
+        mSelectSpinner = (Spinner) findViewById(R.id.spinnerDistance);
+        mSelectSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                Object item = parent.getItemAtPosition(position);
+                distSelect = Double.parseDouble(item.toString());
+            }
+            public void onNothingSelected(AdapterView<?> parent) {
+            }
+        });
 
         mButton = (Button) findViewById(R.id.startStopButton);
 
@@ -318,7 +315,6 @@ public class ConfigActivity extends Activity {
                             */
                             if (mIsPaused) {
                                 mButton.setText("Pause Game");
-                                mButton.setBackgroundColor(0xFF000000);
                                 Log.w(TAG, "Starting Wall Sensing Service");
                                 mIsPaused = false;
                                 mediaPlayer.start();
@@ -343,9 +339,8 @@ public class ConfigActivity extends Activity {
                                                 // Puts the status into the Intent
                                                 .putExtra(Constants.WALLSENSINGSERVICE_STOP, true);
                                 LocalBroadcastManager.getInstance(v.getContext()).sendBroadcast(stopServiceIntent);
-                                mButton.setText("Start Game");
-                                mButton.setBackgroundColor(0x00FF0000);
                                 mediaPlayer.pause();
+                                mButton.setText("Start Game");
                                 mIsPaused = true;
                             }
                         }
@@ -370,7 +365,6 @@ public class ConfigActivity extends Activity {
                                                 .putExtra(Constants.WALLSENSINGSERVICE_STOP, true);
                                 LocalBroadcastManager.getInstance(view.getContext()).sendBroadcast(stopServiceIntent);
                                 mButton.setText("Start Game");
-                                mButton.setBackgroundColor(0x00FF0000);
                                 mIsPaused = true;
                             }
                             if(mediaPlayer != null){

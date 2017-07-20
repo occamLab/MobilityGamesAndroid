@@ -22,47 +22,23 @@
         android:layout_centerHorizontal="true"
         android:gravity="center"/>
 
-    <Button
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:id="@+id/startStopButton"
-        android:layout_above="@+id/midiLayout"
-        android:text="Start Game"
-        android:textSize="50sp"
-        android:padding="30dp"
-        android:layout_margin="20dp"
-        android:background="#00FF00"
-        android:layout_centerHorizontal="true"/>
-
     <Spinner
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="#808080"
         android:id="@+id/spinnerDistance"
-        android:layout_centerInParent="true"
         android:layout_margin="20dp"
         android:padding="40dp"
-        android:drawSelectorOnTop="true"
-        android:layout_below="@id/wallSensing"
+        android:layout_above="@+id/selectMusic"
+        android:layout_centerHorizontal="true"
         android:entries="@array/distance">
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Select Distance"
-            android:textSize="20sp"
-            android:gravity="left"
-            android:textColor="#000000"
-            android:padding="5dp"
-            />
-
     </Spinner>
 
     <Button
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:id="@+id/selectMusic"
-        android:layout_below="@id/spinnerDistance"
+        android:layout_above="@+id/startStopButton"
         android:layout_centerHorizontal="true"
         android:text="Select Music"
         android:textSize="30sp"
@@ -70,6 +46,18 @@
         android:background="#808080"
         android:padding="30dp"
         android:layout_margin="10dp"/>
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/startStopButton"
+        android:text="Start Game"
+        android:textSize="50sp"
+        android:padding="30dp"
+        android:layout_margin="20dp"
+        android:background="#00FF00"
+        android:layout_centerHorizontal="true"
+        android:layout_above="@+id/midiLayout"/>
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -98,6 +86,5 @@
             android:layout_height="wrap_content"
             android:entries="@array/receivers" />
     </LinearLayout>
-
 
 </RelativeLayout>
