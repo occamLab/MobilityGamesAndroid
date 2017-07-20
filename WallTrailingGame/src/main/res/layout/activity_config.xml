@@ -9,59 +9,53 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:id="@+id/backGround"
-        android:background="#808080" />
+        android:background="#0000FF" />
+
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:id="@+id/wallSensing"
         android:text="Wall Sensing Game"
-        android:textSize="30sp"
-        android:textColor="#000000"
+        android:textSize="50sp"
+        android:textColor="#FFFFFF"
         android:layout_alignParentTop="true"
-        android:layout_centerHorizontal="true"/>
+        android:layout_centerHorizontal="true"
+        android:gravity="center"/>
 
     <Button
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:id="@+id/startStopButton"
+        android:layout_above="@+id/midiLayout"
         android:text="Start Game"
+        android:textSize="50sp"
         android:padding="30dp"
-        android:background="#FFFFFF"
-        android:layout_below="@id/wallSensing"
+        android:layout_margin="20dp"
+        android:background="#00FF00"
         android:layout_centerHorizontal="true"/>
-
-    <LinearLayout
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:id="@+id/midiLayout"
-        android:layout_marginTop="20dp"
-        android:layout_below="@+id/startStopButton"
-        android:orientation="horizontal"
-        android:layout_centerHorizontal="true">
-
-        <TextView
-            android:id="@+id/text_receivers"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/receivers_text" />
-
-        <Spinner
-            android:id="@+id/spinner_receivers"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:entries="@array/receivers" />
-    </LinearLayout>
 
     <Spinner
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="#1DA38C"
+        android:background="#808080"
         android:id="@+id/spinnerDistance"
         android:layout_centerInParent="true"
         android:layout_margin="20dp"
         android:padding="40dp"
         android:drawSelectorOnTop="true"
+        android:layout_below="@id/wallSensing"
         android:entries="@array/distance">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Select Distance"
+            android:textSize="20sp"
+            android:gravity="left"
+            android:textColor="#000000"
+            android:padding="5dp"
+            />
+
     </Spinner>
 
     <Button
@@ -73,8 +67,37 @@
         android:text="Select Music"
         android:textSize="30sp"
         android:textColor="#000000"
-        android:background="#00EE00"
+        android:background="#808080"
         android:padding="30dp"
         android:layout_margin="10dp"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/midiLayout"
+        android:layout_marginTop="20dp"
+        android:orientation="horizontal"
+        android:layout_centerHorizontal="true"
+        android:layout_alignParentBottom="true"
+        android:weightSum="2"
+        android:background="#FFFFFF">
+
+        <TextView
+            android:id="@+id/text_receivers"
+            android:layout_weight="1"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="@string/receivers_text"
+            android:textColor="#000000"
+            android:textSize="20sp"/>
+
+        <Spinner
+            android:id="@+id/spinner_receivers"
+            android:layout_weight="1"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:entries="@array/receivers" />
+    </LinearLayout>
+
 
 </RelativeLayout>

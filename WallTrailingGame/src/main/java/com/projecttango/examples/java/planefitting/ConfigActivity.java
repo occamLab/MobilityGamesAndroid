@@ -16,15 +16,20 @@ import android.os.Bundle;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.content.Intent;
 import android.view.*;
 import android.widget.Spinner;
+import android.widget.TextView;
 import android.widget.Toast;
+import android.graphics.Color;
 
 import com.mobileer.miditools.MidiConstants;
 import com.mobileer.miditools.MidiInputPortSelector;
 import com.mobileer.miditools.MusicKeyboardView;
+
+import org.w3c.dom.Text;
 
 import java.io.IOException;
 
@@ -40,7 +45,7 @@ public class ConfigActivity extends Activity {
     Button selectButton = null;
     Spinner mSelectSpinner = null;
     MediaPlayer mediaPlayer = null;
-    double distSelect = 0.0;
+    double distSelect = 1.0;
     Uri uriSound;
     Context contextSound;
 
@@ -59,44 +64,20 @@ public class ConfigActivity extends Activity {
         setContentView(R.layout.activity_config);
 
         //Intalizing variable mSelectSpinner
-        mSelectSpinner = (Spinner) findViewById(R.id.spinnerDistance);
+//        mSelectSpinner = (Spinner) findViewById(R.id.spinnerDistance);
+//        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this,
+//                R.array.distance, android.R.layout.s);
+//
+//        mSelectSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+//            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+//                Object item = parent.getItemAtPosition(position);
+//                distSelect = Double.parseDouble(item.toString());
+//            }
+//            public void onNothingSelected(AdapterView<?> parent) {
+//            }
+//        });
 
         mButton = (Button) findViewById(R.id.startStopButton);
-        mButton.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-
-                /*
-                 * Creates a new Intent to start the WallSensingService
-                 * IntentService. Passes a URI in the
-                 * Intent's "data" field.
-                 */
-                if (mIsPaused) {
-                    String selected = mSelectSpinner.getSelectedItem().toString();
-                    distSelect = Double.parseDouble(selected);
-                    Log.w(TAG, "Starting Wall Sensing Service");
-                    mIsPaused = false;
-
-                    // Send work request to do wall sensing with an intent
-                    mServiceIntent = new Intent(v.getContext(), WallSensingService.class);
-                    startService(mServiceIntent);
-                }
-                else {
-                    Log.w(TAG, "Stopping Wall Sensing Service");
-
-                    // Since the original wall sensing intent is a forever running job, we can't
-                    // send another work request action to stop the service. It would forever be
-                    // queued. Instead, we use local broadcasters to communicate the stop request
-                    // as a workaround.
-                    Intent stopServiceIntent =
-                            new Intent(Constants.BROADCAST_WALLSENSINGSERVICE_STOP)
-                                    // Puts the status into the Intent
-                                    .putExtra(Constants.WALLSENSINGSERVICE_STOP, true);
-                    LocalBroadcastManager.getInstance(v.getContext()).sendBroadcast(stopServiceIntent);
-                    mIsPaused = true;
-                }
-            }
-
-        });
 
 
         //Select the music you want
@@ -147,7 +128,7 @@ public class ConfigActivity extends Activity {
         if(resultCode == RESULT_OK && requestCode == 10){
             uriSound = data.getData();
             contextSound = this;
-            runGame(contextSound, uriSound);
+            setVariable(contextSound, uriSound);
         }
     }
 
@@ -282,7 +263,7 @@ public class ConfigActivity extends Activity {
         }
     }
 
-    public void runGame(Context context, Uri uri){
+    public void setVariable(Context context, Uri uri){
         if (context.checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
             // Should we show an explanation?
             if (shouldShowRequestPermissionRationale(Manifest.permission.READ_EXTERNAL_STORAGE)) {
@@ -295,34 +276,120 @@ public class ConfigActivity extends Activity {
         mediaPlayer =  new MediaPlayer();
         setVolumeControlStream(AudioManager.STREAM_MUSIC);
         mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+
         try {
+            Log.e(TAG, "setting data source " + uri);
             mediaPlayer.setDataSource(context, uri);
+            //mp3 will be started after completion of preparing...
+            mediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
+                @Override
+                public void onPrepared(MediaPlayer player) {
+                    final Runnable runnable = new Runnable() {
+                        @Override
+                        public void run() {
+                            Log.e(TAG,"Started Thread");
+                            while(mIsPaused != true){
+                                if(mWallDist < distSelect && mWallDist > 0){
+                                    if(mediaPlayer.isPlaying() != true){
+                                        Log.e(TAG,"Started Music Play Back");
+                                        mediaPlayer.start();
+                                    }
+                                }
+                                else{
+                                    mediaPlayer.pause();
+                                }
+                                try {
+                                    Thread.sleep(10);
+                                } catch (InterruptedException ex) {
+
+                                }
+                            }
+                            Log.e(TAG,"Ended the Thread");
+                        }
+                    };
+
+                    mButton.setOnClickListener(new View.OnClickListener() {
+                        public void onClick(View v) {
+
+                            /*
+                            * Creates a new Intent to start the WallSensingService
+                            * IntentService. Passes a URI in the
+                            * Intent's "data" field.
+                            */
+                            if (mIsPaused) {
+                                mButton.setText("Pause Game");
+                                mButton.setBackgroundColor(0xFF000000);
+                                Log.w(TAG, "Starting Wall Sensing Service");
+                                mIsPaused = false;
+                                mediaPlayer.start();
+
+                                //Start the audio thread
+                                Thread runThread = new Thread(runnable);
+                                runThread.start();
+
+                                // Send work request to do wall sensing with an intent
+                                mServiceIntent = new Intent(v.getContext(), WallSensingService.class);
+                                startService(mServiceIntent);
+                            }
+                            else {
+                                Log.w(TAG, "Stopping Wall Sensing Service");
+
+                                // Since the original wall sensing intent is a forever running job, we can't
+                                // send another work request action to stop the service. It would forever be
+                                // queued. Instead, we use local broadcasters to communicate the stop request
+                                // as a workaround.
+                                Intent stopServiceIntent =
+                                        new Intent(Constants.BROADCAST_WALLSENSINGSERVICE_STOP)
+                                                // Puts the status into the Intent
+                                                .putExtra(Constants.WALLSENSINGSERVICE_STOP, true);
+                                LocalBroadcastManager.getInstance(v.getContext()).sendBroadcast(stopServiceIntent);
+                                mButton.setText("Start Game");
+                                mButton.setBackgroundColor(0x00FF0000);
+                                mediaPlayer.pause();
+                                mIsPaused = true;
+                            }
+                        }
+
+
+
+                    });
+
+                    selectButton.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View view) {
+                            if(mIsPaused == false){
+                                Log.w(TAG, "Stopping Wall Sensing Service");
+
+                                // Since the original wall sensing intent is a forever running job, we can't
+                                // send another work request action to stop the service. It would forever be
+                                // queued. Instead, we use local broadcasters to communicate the stop request
+                                // as a workaround.
+                                Intent stopServiceIntent =
+                                        new Intent(Constants.BROADCAST_WALLSENSINGSERVICE_STOP)
+                                                // Puts the status into the Intent
+                                                .putExtra(Constants.WALLSENSINGSERVICE_STOP, true);
+                                LocalBroadcastManager.getInstance(view.getContext()).sendBroadcast(stopServiceIntent);
+                                mButton.setText("Start Game");
+                                mButton.setBackgroundColor(0x00FF0000);
+                                mIsPaused = true;
+                            }
+                            if(mediaPlayer != null){
+                                mediaPlayer.release();
+                            }
+                            mediaPlayer = null;
+                            Intent intent = new Intent(Intent.ACTION_PICK, android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI);
+                            startActivityForResult(intent, 10);
+                        }
+                    });
+
+                }
+
+            });
             mediaPlayer.prepareAsync();
         }
         catch (IOException e) {
             e.printStackTrace();
         }
-
-        Runnable runnable = new Runnable() {
-            @Override
-            public void run() {
-                Log.e(TAG,"Started Thread");
-                while(mIsPaused != true){
-                    if(mWallDist < distSelect && mWallDist > 0){
-                        if(mediaPlayer.isPlaying() != true){
-                            mediaPlayer.start();
-                        }
-                    }
-                    else{
-                        mediaPlayer.pause();
-                    }
-                }
-                Log.e(TAG,"Ended the Thread");
-            }
-        };
-
-        Thread runThread = new Thread(runnable);
-        runThread.start();
 
 
     }
