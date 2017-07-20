@@ -40,7 +40,8 @@ public class ConfigActivity extends Activity {
     Button selectButton = null;
     Spinner mSelectSpinner = null;
     MediaPlayer mediaPlayer = null;
-    double distSelect = 1.0;
+    double mRewardSoundDist = 1.0; // Distance at which reward sounds are played
+    double mMaxFreqDist = 5.0; // Distance at which frequency maxes out
     Uri uriSound;
     Context contextSound;
 
@@ -66,7 +67,7 @@ public class ConfigActivity extends Activity {
         mSelectSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 Object item = parent.getItemAtPosition(position);
-                distSelect = Double.parseDouble(item.toString());
+                mRewardSoundDist = Double.parseDouble(item.toString());
             }
             public void onNothingSelected(AdapterView<?> parent) {
             }
@@ -237,6 +238,25 @@ public class ConfigActivity extends Activity {
         }
     }
 
+    /*
+     * Returns a semitone pitch, from 0-11, based on distance to the wall
+     */
+    private int pitchFromDistance() {
+        // Divide the range between reward and maxfreq into 12 semitones
+        double semiToneInterval = (mMaxFreqDist - mRewardSoundDist) / 12.0;
+
+        int semiTone = 0;
+        while (mWallDist > mRewardSoundDist + (semiToneInterval * semiTone)) {
+            semiTone++;
+        }
+
+        if (semiTone >= 12) {
+            Log.e(TAG, "Step closer to wall to hear the notes!");
+        }
+
+        return semiTone;
+    }
+
     // Broadcast receiver for receiving status updates from the IntentService
     private class DownloadStateReceiver extends BroadcastReceiver
     {
@@ -252,20 +272,9 @@ public class ConfigActivity extends Activity {
             mWallDist = intent.getDoubleExtra(Constants.WALLDISTANCE, 0.0);
 //            Log.e(TAG, Double.toString(mWallDist));
 
-            double mMaxFreqDist = 3.0; // Distance at which frequency maxes out
-            double mRewardSoundDist = 0.5;
 
-            // Divide the range between reward and maxfreq into 12 semitones
-            double semiToneInterval = (mMaxFreqDist - mRewardSoundDist) / 12.0;
 
-            int semiTone = 0;
-            while (mWallDist > mRewardSoundDist + (semiToneInterval * semiTone)) {
-                semiTone++;
-            }
 
-            if (semiTone >= 12) {
-                Log.e(TAG, "Step closer to wall to hear the notes!");
-            }
 
 //            // Magic Calculations from Wall Game in ROS
 //            double mMaxFreq = 2092.8;
@@ -279,15 +288,7 @@ public class ConfigActivity extends Activity {
 //            )*2;
 //            Log.e(TAG, Double.toString(freq));
 
-            noteOn(0, mLowestNoteOffset + semiTone, DEFAULT_VELOCITY);
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            noteOff(0, mLowestNoteOffset + semiTone, DEFAULT_VELOCITY);
-            Log.e(TAG, Double.toString(distSelect));
-            Log.e(TAG, Double.toString(mWallDist));
+
         }
     }
 
@@ -317,7 +318,7 @@ public class ConfigActivity extends Activity {
                         public void run() {
                             Log.e(TAG,"Started Thread");
                             while(mIsPaused != true){
-                                if(mWallDist < distSelect && mWallDist > 0){
+                                if(mWallDist < mRewardSoundDist && mWallDist > 0){
                                     if(mediaPlayer.isPlaying() != true){
                                         Log.e(TAG,"Started Music Play Back");
                                         mediaPlayer.start();
@@ -325,6 +326,14 @@ public class ConfigActivity extends Activity {
                                 }
                                 else{
                                     mediaPlayer.pause();
+                                    int semiTone = pitchFromDistance();
+                                    noteOn(0, mLowestNoteOffset + semiTone, DEFAULT_VELOCITY);
+                                    try {
+                                        Thread.sleep(1000);
+                                    } catch (InterruptedException e) {
+                                        e.printStackTrace();
+                                    }
+                                    noteOff(0, mLowestNoteOffset + semiTone, DEFAULT_VELOCITY);
                                 }
                                 try {
                                     Thread.sleep(10);
