@@ -11,29 +11,22 @@ import android.media.MediaPlayer;
 import android.media.midi.MidiManager;
 import android.media.midi.MidiReceiver;
 import android.net.Uri;
-import android.nfc.Tag;
 import android.os.Bundle;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.content.Intent;
 import android.view.*;
 import android.widget.Spinner;
-import android.widget.TextView;
 import android.widget.Toast;
-import android.graphics.Color;
+
 
 import com.mobileer.miditools.MidiConstants;
 import com.mobileer.miditools.MidiInputPortSelector;
-import com.mobileer.miditools.MusicKeyboardView;
 
-import org.w3c.dom.Text;
 
 import java.io.IOException;
-
-import static android.app.PendingIntent.getActivity;
 
 public class ConfigActivity extends Activity {
 
@@ -63,7 +56,7 @@ public class ConfigActivity extends Activity {
         super.onCreate(saveIntentState);
         setContentView(R.layout.activity_config);
 
-        //ntalizing variable mSelectSpinner
+        //Initializing variable mSelectSpinner
         mSelectSpinner = (Spinner) findViewById(R.id.spinnerDistance);
         mSelectSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
