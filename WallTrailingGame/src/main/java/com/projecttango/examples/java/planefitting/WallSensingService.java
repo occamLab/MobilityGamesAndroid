@@ -225,8 +225,8 @@ public class WallSensingService extends IntentService {
             // get largest plane
             int mostInliers = 0;
             int planesUsed = 0;
-            float[] us = {0.5f, 0.4f, 0.6f, 0.2f, 0.8f};
-            float[] vs = {0.5f, 0.4f, 0.6f, 0.2f, 0.8f};
+            float[] us = {0.5f, 0.4f, 0.6f, 0.2f, 0.8f, 0.0f, 1.0f};
+            float[] vs = {0.5f, 0.4f, 0.6f, 0.2f, 0.8f, 0.0f, 1.0f};
             for (float u : us) {
                 for (float v : vs) {
                     try {
