@@ -6,14 +6,12 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
-import android.media.midi.MidiDeviceInfo;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.media.midi.MidiManager;
 import android.media.midi.MidiReceiver;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Handler;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.widget.AdapterView;
@@ -51,10 +49,6 @@ public class ConfigActivity extends Activity {
     private int mLowestNoteOffset = 48; // Based on the lowest note of MidiKeyboardView
     private byte[] mByteBuffer = new byte[3];
     private static final int DEFAULT_VELOCITY = 64;
-
-
-    // From MIDI Synth
-//    private MidiOutputPortConnectionSelector mPortSelector;
     private LatencyController mLatencyController;
 
     @Override
@@ -90,10 +84,6 @@ public class ConfigActivity extends Activity {
         // The filter's action is BROADCAST_WALLDISTANCE
         IntentFilter statusIntentFilter = new IntentFilter(
                 Constants.BROADCAST_WALLDISTANCE);
-
-        // Adds a data filter for the HTTP scheme
-//            statusIntentFilter.addDataScheme("http");
-
         // Instantiates a new DownloadStateReceiver
         DownloadStateReceiver mDownloadStateReceiver =
                 new DownloadStateReceiver();
@@ -154,20 +144,6 @@ public class ConfigActivity extends Activity {
         return super.onOptionsItemSelected(item);
     }
 
-
-//    public class ChannelSpinnerActivity implements AdapterView.OnItemSelectedListener {
-//        @Override
-//        public void onItemSelected(AdapterView<?> parent, View view,
-//                                   int pos, long id) {
-//            mChannel = pos & 0x0F;
-//            updateProgramText();
-//        }
-//
-//        @Override
-//        public void onNothingSelected(AdapterView<?> parent) {
-//        }
-//    }
-
     private void noteOff(int channel, int pitch, int velocity) {
         midiCommand(MidiConstants.STATUS_NOTE_OFF + channel, pitch, velocity);
     }
@@ -183,14 +159,6 @@ public class ConfigActivity extends Activity {
         // Setup Spinner that selects a MIDI input port.
         mKeyboardReceiverSelector = new MidiInputPortSelector(mMidiManager,
                 this, R.id.spinner_receivers);
-
-        // FROM MIDI SYNTH
-        //        MidiDeviceInfo synthInfo =  MidiTools.findDevice(mMidiManager, "Occam",
-//                "Synth");
-//        int portIndex = 0;
-//        mPortSelector = new MidiOutputPortConnectionSelector(mMidiManager, this,
-//                R.id.spinner_synth_sender, synthInfo, portIndex);
-//        mPortSelector.setConnectedListener(new MyPortsConnectedListener());
     }
 
     private void noteOn(int channel, int pitch, int velocity) {
@@ -270,25 +238,6 @@ public class ConfigActivity extends Activity {
          * Handle Intents here.
          */
             mWallDist = intent.getDoubleExtra(Constants.WALLDISTANCE, 0.0);
-//            Log.e(TAG, Double.toString(mWallDist));
-
-
-
-
-
-//            // Magic Calculations from Wall Game in ROS
-//            double mMaxFreq = 2092.8;
-//            double mMinFreq = 130.8;
-//            double mMagicNum = 65.4;
-//            double multiplier = mMaxFreq /
-//                    Math.pow(2, (mMaxFreqDist - mRewardSoundDist));
-//            double freq = Math.max(
-//                    Math.min(multiplier*Math.pow(mWallDist-mRewardSoundDist, 2) + mMagicNum*2, mMaxFreq),
-//                    mMagicNum*2
-//            )*2;
-//            Log.e(TAG, Double.toString(freq));
-
-
         }
     }
 
@@ -424,8 +373,6 @@ public class ConfigActivity extends Activity {
         catch (IOException e) {
             e.printStackTrace();
         }
-
-
     }
 }
 
