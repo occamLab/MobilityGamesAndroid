@@ -323,7 +323,7 @@ Java_com_projecttango_examples_cpp_hellomotiontracking_TangoJniNative_disconnect
 
 JNIEXPORT void
 JNICALL Java_com_projecttango_examples_cpp_hellomotiontracking_TangoJniNative_returnArrayFisheye(
-        JNIEnv *env, jobject This, jbyteArray pixels, jintArray stride, jdoubleArray tagDetection) {
+        JNIEnv *env, jobject This, jbyteArray pixels, jintArray stride, jdoubleArray tagDetection, jdoubleArray tagPosition) {
     // this could work better across threads
     unsigned char fisheye_image_buffer_local[bufferSizeFisheyeYUVN21];
     pthread_mutex_lock(&fisheyeImageLock);
@@ -378,6 +378,7 @@ JNICALL Java_com_projecttango_examples_cpp_hellomotiontracking_TangoJniNative_re
     apriltagDetector.process(undistortedImage, detections);
     auto endTags = chrono::steady_clock::now();
     jdouble *tD = env->GetDoubleArrayElements(tagDetection, NULL);
+    jdouble *tP = env->GetDoubleArrayElements(tagPosition, NULL);
     tD[0] = -1.0;                   // this indicates that no tag was found
     for (unsigned int i = 0; i < detections.size(); i++) {
         Eigen::Matrix4d transform =
@@ -406,9 +407,14 @@ JNICALL Java_com_projecttango_examples_cpp_hellomotiontracking_TangoJniNative_re
                 tD[6] = detections[i].p[3][0];
                 tD[7] = detections[i].p[3][1];
 #endif
+        tP[0] = transform(0, 3);
+        tP[1] = transform(1, 3);
+        tP[2] = transform(2, 3);
         LOGI("detected %f, %f, %f", transform(0, 3), transform(1, 3), transform(2, 3));
     }
     env->ReleaseDoubleArrayElements(tagDetection, tD, 0);
+    env->ReleaseDoubleArrayElements(tagPosition, tP, 0);
+
 
     // only support this for April Tags
     jbyte * pixelJNI = env->GetByteArrayElements(pixels, NULL);

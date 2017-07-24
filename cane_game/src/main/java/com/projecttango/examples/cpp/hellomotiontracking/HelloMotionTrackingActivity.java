@@ -32,6 +32,7 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Color;
 import android.graphics.Matrix;
+import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -46,6 +47,7 @@ import android.content.ServiceConnection;
  * Main activity controls Tango lifecycle.
  */
 public class HelloMotionTrackingActivity extends Activity implements OnItemSelectedListener{
+    public static final String TAG = HelloMotionTrackingActivity.class.getSimpleName();
     public static final String EXTRA_KEY_PERMISSIONTYPE = "PERMISSIONTYPE";
 
     private boolean threadsStarted = false;
@@ -132,13 +134,17 @@ public class HelloMotionTrackingActivity extends Activity implements OnItemSelec
                             final int[] fisheyeStride = new int[1];
                             final byte[] fisheyePixels = new byte[fisheyeImageWidth*fisheyeImageHeight*3/2];
                             final double[] tagDetection = new double[8];          // 4 points with 2 coordinates each
+                            final double[] tagPosition = new double[3];           // 3 coordinates, xyz
 
                             // grab the pixels and any tag detections
-                            TangoJniNative.returnArrayFisheye(fisheyePixels, fisheyeStride, tagDetection);
+                            TangoJniNative.returnArrayFisheye(fisheyePixels, fisheyeStride, tagDetection, tagPosition);
                             framesProcessed++;
                             int startSlot = (int) Math.floor(startingTimeStamp*targetFrameRate);
                             final double frameRateRatio = framesProcessed/((float)globalSlot - startSlot);
                             System.out.println("Frame rate goal " + targetFrameRate + " ratio " + frameRateRatio);
+                            Log.i(TAG, "x: " + Double.toString(tagPosition[0])
+                                    + " y: " + Double.toString(tagPosition[1])
+                                    + " z: " + Double.toString(tagPosition[2]));
 
                             synchronized (updateImageViewLock) {
                                 if (ts < lastDisplayedImageTS) {
