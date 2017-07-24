@@ -20,11 +20,21 @@ package com.projecttango.examples.cpp.hellomotiontracking;
 
 import com.projecttango.examples.cpp.util.TangoInitializationHelper;
 
+import android.Manifest;
+import android.content.Context;
+import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.YuvImage;
+import android.media.AudioManager;
+import android.media.MediaPlayer;
+import android.net.Uri;
 import android.os.IBinder;
 import android.app.Activity;
 import android.os.Bundle;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.util.Locale;
+
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Rect;
@@ -32,8 +42,11 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Color;
 import android.graphics.Matrix;
+import android.speech.tts.TextToSpeech;
+import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.view.View;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Spinner;
@@ -50,6 +63,9 @@ public class HelloMotionTrackingActivity extends Activity implements OnItemSelec
     public static final String TAG = HelloMotionTrackingActivity.class.getSimpleName();
     public static final String EXTRA_KEY_PERMISSIONTYPE = "PERMISSIONTYPE";
 
+    //
+    // Tag Detection Variables
+    //
     private boolean threadsStarted = false;
 
     private int globalSlot = 0;
@@ -69,6 +85,31 @@ public class HelloMotionTrackingActivity extends Activity implements OnItemSelec
     private int framesProcessed = 0;
 
     private Thread[] imagesFisheyeThread = new Thread[threadCount];
+
+    //
+    // Game Loop Variables
+    //
+    private boolean caneGameHasStarted = false;
+    private boolean mIsPaused = true;
+    Button startStopButton = null;
+    Button selectMusicButton = null;
+
+
+    //
+    // Sound Specific Variables
+    //
+    Uri uriSound;
+    Context contextSound;
+    MediaPlayer mediaPlayer = null;
+    public TextToSpeech textToSpeech;
+
+    //
+    // Cane Specific Variables
+    //
+    private int sweepCounter = 0;
+    private double tagDistance = 29;      // distance in inches along cane shaft, btwn tag and tip
+    private double canePositionY;
+    private double prevCanePositionY;
 
     public static Bitmap rotateBitmap(Bitmap source, float angle) {
         Matrix matrix = new Matrix();
@@ -90,6 +131,13 @@ public class HelloMotionTrackingActivity extends Activity implements OnItemSelec
     public void onNothingSelected(AdapterView parent) {
         // Do nothing.
     }
+
+    public double[] calcCaneTip(double[] tagPosition) {
+        // TODO(rlouie): use the tagDistance variable to project
+        // For now, just return
+        return tagPosition;
+    }
+
     // Project Tango Service connection.
     ServiceConnection mTangoServiceConnection = new ServiceConnection() {
         public void onServiceConnected(ComponentName name, IBinder service) {
@@ -153,6 +201,9 @@ public class HelloMotionTrackingActivity extends Activity implements OnItemSelec
                                 }
                                 // mark that we are going to display this image, and put the display of it on the UI event queue
                                 lastDisplayedImageTS = ts;
+
+                                // update cane tip pose
+                                canePositionY = calcCaneTip(tagPosition)[1];
 
                                 runOnUiThread(new Runnable() {
                                     @Override
@@ -223,6 +274,41 @@ public class HelloMotionTrackingActivity extends Activity implements OnItemSelec
         frameRateSpinner.setAdapter(adapter);
         frameRateSpinner.setSelection(((int)targetFrameRate) - 1);      // subtract 1 since setSelection is by index, not by value
         frameRateSpinner.setOnItemSelectedListener(this);
+
+        startStopButton = (Button) findViewById(R.id.startStopButton);\
+        
+        //Select the music you want
+        selectMusicButton = (Button) findViewById(R.id.selectMusic);
+        selectMusicButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                mediaPlayer = null;
+                Intent intent = new Intent(Intent.ACTION_PICK, android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI);
+                startActivityForResult(intent, 10);
+            }
+        });
+
+        textToSpeech = new TextToSpeech(getApplicationContext(), new TextToSpeech.OnInitListener() {
+            @Override
+            public void onInit(int status) {
+                if (status != TextToSpeech.ERROR) {
+                    textToSpeech.setLanguage(new Locale("eng", "usa"));
+                    textToSpeech.setSpeechRate(1.5f);
+                    textToSpeech.setPitch(1.618f);
+                }
+            }
+
+        });
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+
+        if(resultCode == RESULT_OK && requestCode == 10){
+            uriSound = data.getData();
+            contextSound = this;
+            setVariable(contextSound, uriSound);
+        }
     }
 
     @Override
@@ -248,5 +334,128 @@ public class HelloMotionTrackingActivity extends Activity implements OnItemSelec
         super.onPause();
         TangoJniNative.disconnect();
         unbindService(mTangoServiceConnection);
+    }
+
+    public void runCaneGame() {
+
+        // At t = 0, there is no previous
+        if (!caneGameHasStarted) {
+            caneGameHasStarted = true;
+            prevCanePositionY = canePositionY;
+        }
+
+        if (prevCanePositionY * canePositionY < 0) {
+            sweepCounter++;
+            String utterance = Integer.toString(sweepCounter);
+            textToSpeech.speak(utterance, TextToSpeech.QUEUE_FLUSH, null, null);
+        }
+
+        prevCanePositionY = canePositionY;
+
+        try {
+            Thread.sleep(5);
+        } catch (InterruptedException ex) {
+            // thread was interrupted... no big deal
+        }
+    }
+    
+    public void setVariable(Context context, Uri uri){
+        if (context.checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+            // Should we show an explanation?
+            if (shouldShowRequestPermissionRationale(Manifest.permission.READ_EXTERNAL_STORAGE)) {
+                // Explain to the user why we need to read the contacts
+            }
+            requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, 11331);
+            // MY_PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE is an
+            // app-defined int constant that should be quite unique
+        }
+        mediaPlayer =  new MediaPlayer();
+        setVolumeControlStream(AudioManager.STREAM_MUSIC);
+        mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+
+        try {
+            Log.e(TAG, "setting data source " + uri);
+            mediaPlayer.setDataSource(context, uri);
+            //mp3 will be started after completion of preparing...
+            mediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
+                @Override
+                public void onPrepared(MediaPlayer player) {
+                    final Runnable runnable = new Runnable() {
+                        @Override
+                        public void run() {
+                            Log.e(TAG,"Started Thread");
+                            while(mIsPaused != true){
+                                runCaneGame();
+                            }
+                            Log.e(TAG,"Ended the Thread");
+                        }
+                    };
+
+                    startStopButton.setOnClickListener(new View.OnClickListener() {
+                        public void onClick(View v) {
+
+                            /*
+                            * Creates a new Intent to start the WallSensingService
+                            * IntentService. Passes a URI in the
+                            * Intent's "data" field.
+                            */
+                            if (mIsPaused) {
+                                startStopButton.setText("Pause Game");
+                                Log.w(TAG, "Starting Wall Sensing Service");
+                                mIsPaused = false;
+                                mediaPlayer.start();
+
+                                //Start the audio thread
+                                Thread runThread = new Thread(runnable);
+                                runThread.start();
+                            }
+                            else {
+                                Log.w(TAG, "Stopping Wall Sensing Service");
+
+                                mediaPlayer.pause();
+                                startStopButton.setText("Start Game");
+                                mIsPaused = true;
+                            }
+                        }
+
+
+
+                    });
+
+                    selectMusicButton.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View view) {
+                            if(mIsPaused == false){
+                                Log.w(TAG, "Stopping Wall Sensing Service");
+
+                                // Since the original wall sensing intent is a forever running job, we can't
+                                // send another work request action to stop the service. It would forever be
+                                // queued. Instead, we use local broadcasters to communicate the stop request
+//                                // as a workaround.
+//                                Intent stopServiceIntent =
+//                                        new Intent(Constants.BROADCAST_WALLSENSINGSERVICE_STOP)
+//                                                // Puts the status into the Intent
+//                                                .putExtra(Constants.WALLSENSINGSERVICE_STOP, true);
+//                                LocalBroadcastManager.getInstance(view.getContext()).sendBroadcast(stopServiceIntent);
+                                startStopButton.setText("Start Game");
+                                mIsPaused = true;
+                            }
+                            if(mediaPlayer != null){
+                                mediaPlayer.release();
+                            }
+                            mediaPlayer = null;
+                            Intent intent = new Intent(Intent.ACTION_PICK, android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI);
+                            startActivityForResult(intent, 10);
+                        }
+                    });
+
+                }
+
+            });
+            mediaPlayer.prepareAsync();
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }
