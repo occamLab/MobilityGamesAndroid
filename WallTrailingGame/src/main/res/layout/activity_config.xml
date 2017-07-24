@@ -9,7 +9,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:id="@+id/backGround"
-        android:background="#0000FF" />
+        android:background="#000000" />
 
     <TextView
         android:layout_width="wrap_content"
@@ -25,13 +25,16 @@
     <Spinner
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="#808080"
+        android:background="@drawable/roundedbutton"
         android:id="@+id/spinnerDistance"
         android:layout_margin="20dp"
-        android:padding="40dp"
+        android:padding="20dp"
         android:layout_above="@+id/selectMusic"
         android:layout_centerHorizontal="true"
-        android:entries="@array/distance">
+        android:entries="@array/distance"
+        android:prompt="@string/select_dist"
+        android:popupBackground="#000000">
+
     </Spinner>
 
     <Button
@@ -42,20 +45,21 @@
         android:layout_centerHorizontal="true"
         android:text="Select Music"
         android:textSize="30sp"
-        android:textColor="#000000"
-        android:background="#808080"
+        android:textColor="#FFFFFF"
+        android:background="@drawable/roundedbutton"
         android:padding="30dp"
         android:layout_margin="10dp"/>
 
     <Button
-        android:layout_width="wrap_content"
+        android:layout_width="200dp"
         android:layout_height="wrap_content"
         android:id="@+id/startStopButton"
-        android:text="Start Game"
+        android:text="Play"
+        android:textColor="#808080"
         android:textSize="50sp"
         android:padding="30dp"
         android:layout_margin="20dp"
-        android:background="#00FF00"
+        android:background="@drawable/netural_button"
         android:layout_centerHorizontal="true"
         android:layout_above="@+id/midiLayout"/>
 
@@ -76,7 +80,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:text="@string/receivers_text"
-            android:textColor="#000000"
+            android:textColor="#0000FF"
             android:textSize="20sp"/>
 
         <Spinner
@@ -84,7 +88,7 @@
             android:layout_weight="1"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:entries="@array/receivers" />
+             />
     </LinearLayout>
 
 </RelativeLayout>
