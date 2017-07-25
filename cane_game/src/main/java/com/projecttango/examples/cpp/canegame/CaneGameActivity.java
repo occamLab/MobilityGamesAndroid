@@ -16,7 +16,7 @@
 
 // TODO: handle disconnects from the socket server (reset everything)
 // TODO: PointCloud2 instead of PointCloud (faster)
-package com.projecttango.examples.cpp.hellomotiontracking;
+package com.projecttango.examples.cpp.canegame;
 
 import com.projecttango.examples.cpp.util.TangoInitializationHelper;
 

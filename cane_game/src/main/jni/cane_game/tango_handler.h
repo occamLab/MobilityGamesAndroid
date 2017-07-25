@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef CPP_BASIC_EXAMPLES_HELLO_MOTION_TRACKING_TANGO_HANDLER_H_
-#define CPP_BASIC_EXAMPLES_HELLO_MOTION_TRACKING_TANGO_HANDLER_H_
+#ifndef CPP_BASIC_EXAMPLES_CANE_GAME_TANGO_HANDLER_H_
+#define CPP_BASIC_EXAMPLES_CANE_GAME_TANGO_HANDLER_H_
 
 #include <android/log.h>
 #include <jni.h>
@@ -23,11 +23,11 @@
 #include "tango_client_api.h"   // NOLINT
 #include "tango_support_api.h"  // NOLINT
 
-#define LOG_TAG "cpp_hello_motion_tracking"
+#define LOG_TAG "cpp_cane_game"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 
-namespace hello_motion_tracking {
+namespace cane_game {
 // TangoHandler provides functionality to communicate with the Tango Service.
 class TangoHandler {
  public:
@@ -64,6 +64,6 @@ class TangoHandler {
  private:
   TangoConfig tango_config_;
 };
-}  // namespace hello_motion_tracking
+}  // namespace cane_game
 
-#endif  // CPP_BASIC_EXAMPLES_HELLO_MOTION_TRACKING_TANGO_HANDLER_H_
+#endif  // CPP_BASIC_EXAMPLES_CANE_GAME_TANGO_HANDLER_H_
