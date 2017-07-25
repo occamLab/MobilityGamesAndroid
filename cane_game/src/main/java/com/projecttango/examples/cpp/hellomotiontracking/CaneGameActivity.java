@@ -33,7 +33,10 @@ import android.app.Activity;
 import android.os.Bundle;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Locale;
+import java.util.Set;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -43,9 +46,14 @@ import android.graphics.Paint;
 import android.graphics.Color;
 import android.graphics.Matrix;
 import android.speech.tts.TextToSpeech;
+import android.support.v4.util.ArrayMap;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.CheckBox;
+import android.widget.CompoundButton;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Spinner;
@@ -109,6 +117,9 @@ public class CaneGameActivity extends Activity implements OnItemSelectedListener
     public double tip2TagDistance = 29 * 0.0254;
     private double canePositionY;
     private double prevCanePositionY;
+    private Set<Integer> rewardIncrements = new HashSet<Integer>(Arrays.asList(10, 20, 50));
+    private ArrayMap<Integer, Boolean> doRewardAt = new ArrayMap<>();
+    private ArrayMap<Integer, CheckBox> rewardAtCheckBoxes = new ArrayMap<>();
 
     public static Bitmap rotateBitmap(Bitmap source, float angle) {
         Matrix matrix = new Matrix();
@@ -323,7 +334,19 @@ public class CaneGameActivity extends Activity implements OnItemSelectedListener
             }
 
         });
+
+        for (int i: rewardIncrements) {
+            switch (i) {
+                case 10:
+                    setRewardCheckBoxes(i, R.id.rewardAt10);
+                case 20:
+                    setRewardCheckBoxes(i, R.id.rewardAt20);
+                case 50:
+                    setRewardCheckBoxes(i, R.id.rewardAt50);
+            }
+        }
     }
+
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -368,12 +391,24 @@ public class CaneGameActivity extends Activity implements OnItemSelectedListener
             prevCanePositionY = canePositionY;
         }
 
+        Log.i(TAG, "Reward at 10? " + Boolean.toString(doRewardAt.get(10)));
+
         // the cane has passed the midline (y = 0)
         if (prevCanePositionY * canePositionY < 0) {
             sweepCounter++;
-            String utterance = Integer.toString(sweepCounter);
-            if (!textToSpeech.isSpeaking()) {
-                textToSpeech.speak(utterance, TextToSpeech.QUEUE_ADD, null, null);
+
+            // Reached a reward increment
+            if ((rewardIncrements.contains(sweepCounter)) &&
+                    (doRewardAt.get(sweepCounter) == true)) {
+
+            }
+            else {
+                // Count the sweeps when not playing music and not counting previous
+                if (!textToSpeech.isSpeaking()) {
+                    String utterance = Integer.toString(sweepCounter);
+                    textToSpeech.speak(utterance, TextToSpeech.QUEUE_ADD, null, null);
+                }
+
             }
         }
 
@@ -449,4 +484,29 @@ public class CaneGameActivity extends Activity implements OnItemSelectedListener
             e.printStackTrace();
         }
     }
+
+    public CompoundButton.OnCheckedChangeListener rewardAtCheckBoxListener = new CompoundButton.OnCheckedChangeListener() {
+        @Override
+        public void onCheckedChanged(CompoundButton compoundButton, boolean isChecked) {
+            int id = compoundButton.getId();
+
+            switch (id) {
+                case R.id.rewardAt10:
+                    doRewardAt.put(10, isChecked);
+                case R.id.rewardAt20:
+                    doRewardAt.put(20, isChecked);
+                case R.id.rewardAt50:
+                    doRewardAt.put(50, isChecked);
+            }
+        }
+
+    };
+
+    public void setRewardCheckBoxes(Integer i, int id) {
+//
+        CheckBox rewardAtCheckBox = (CheckBox) findViewById(id);
+        rewardAtCheckBox.setOnCheckedChangeListener(rewardAtCheckBoxListener);
+        rewardAtCheckBoxes.put(i, rewardAtCheckBox);
+        doRewardAt.put(i, false);
+    };
 }
