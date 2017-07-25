@@ -361,7 +361,9 @@ public class HelloMotionTrackingActivity extends Activity implements OnItemSelec
         if (prevCanePositionY * canePositionY < 0) {
             sweepCounter++;
             String utterance = Integer.toString(sweepCounter);
-            textToSpeech.speak(utterance, TextToSpeech.QUEUE_ADD, null, null);
+            if (!textToSpeech.isSpeaking()) {
+                textToSpeech.speak(utterance, TextToSpeech.QUEUE_ADD, null, null);
+            }
         }
 
         prevCanePositionY = canePositionY;
