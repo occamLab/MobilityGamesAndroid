@@ -59,8 +59,8 @@ import android.content.ServiceConnection;
 /**
  * Main activity controls Tango lifecycle.
  */
-public class HelloMotionTrackingActivity extends Activity implements OnItemSelectedListener{
-    public static final String TAG = HelloMotionTrackingActivity.class.getSimpleName();
+public class CaneGameActivity extends Activity implements OnItemSelectedListener{
+    public static final String TAG = CaneGameActivity.class.getSimpleName();
     public static final String EXTRA_KEY_PERMISSIONTYPE = "PERMISSIONTYPE";
     static final int SELECT_MUSIC_REQUEST = 10;
     //
