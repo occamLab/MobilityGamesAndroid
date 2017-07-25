@@ -70,7 +70,11 @@ public class TangoJniNative {
     public static native void disconnect();
     // byte[] instead of void
 
-    public static native void returnArrayFisheye(byte[] fisheyePixels, int[] stride, double[] tagDetection);
+    public static native void returnArrayFisheye(byte[] fisheyePixels,
+                                                 int[] stride,
+                                                 double[] tagDetection,
+                                                 double[] tagPosition,
+                                                 double[] tagZNorm);
 
     public static native double getFisheyeFrameTimestamp();
 

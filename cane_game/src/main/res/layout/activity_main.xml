@@ -1,36 +1,65 @@
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="10dp"
+    android:fillViewport="false">
+
+    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
     android:paddingLeft="15dp"
     android:paddingRight="15dp"
     android:orientation="vertical">
+        <ImageView
+            android:id="@+id/fisheye_image"
+            android:adjustViewBounds="true"
+            android:layout_width="447dp"
+            android:layout_height="596dp"/>
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content">
+            <TextView
+                android:id="@+id/frame_spinner_help"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Target frame rate:" />
 
+            <Spinner
+                android:id="@+id/frame_rate_spinner"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content" />
+        </LinearLayout>
 
-    <ImageView
-        android:id="@+id/fisheye_image"
-        android:adjustViewBounds="true"
-        android:layout_width="447dp"
-        android:layout_height="596dp"/>
-    <LinearLayout
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content">
         <TextView
-            android:id="@+id/frame_spinner_help"
+            android:id="@+id/frame_rate_text"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Target frame rate:" />
+            android:text="Actual frame rate:" />
 
-        <Spinner
-            android:id="@+id/frame_rate_spinner"
-            android:layout_width="fill_parent"
-            android:layout_height="wrap_content" />
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/startStopButton"
+            android:text="Start Game"
+            android:textSize="50sp"
+            android:padding="30dp"
+            android:layout_margin="20dp"
+            android:background="#00FF00"
+            android:layout_centerHorizontal="true"/>
+
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/selectMusic"
+            android:layout_centerHorizontal="true"
+            android:text="Select Music"
+            android:textSize="30sp"
+            android:textColor="#000000"
+            android:background="#808080"
+            android:padding="30dp"
+            android:layout_margin="10dp"/>
+
     </LinearLayout>
-
-    <TextView
-        android:id="@+id/frame_rate_text"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Actual frame rate:" />
-
-
-</LinearLayout>
+    </ScrollView>
