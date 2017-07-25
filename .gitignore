@@ -12,6 +12,10 @@
 bin/
 gen/
 out/
+*.o
+*.o.d
+cane_game/src/main/libs/
+cane_game/src/main/obj/
 
 # Gradle files
 .gradle/
