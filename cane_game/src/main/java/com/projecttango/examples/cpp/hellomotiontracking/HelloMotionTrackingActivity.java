@@ -107,7 +107,8 @@ public class HelloMotionTrackingActivity extends Activity implements OnItemSelec
     // Cane Specific Variables
     //
     private int sweepCounter = 0;
-    private double tip2TagDistance = 29;      // distance in inches along cane shaft, btwn tag and tip
+    // distance in meters along cane shaft, btwn tag and tip
+    public double tip2TagDistance = 29 * 0.0254;
     private double canePositionY;
     private double prevCanePositionY;
 
