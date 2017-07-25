@@ -347,8 +347,18 @@ public class ConfigActivity extends Activity {
 
                             if(mRewardSoundDist == 0.0)
                             {
+                                mButton.setText("Play");
+                                mButton.setTextColor(0xFF808080);
+                                mButton.setBackgroundResource(R.drawable.netural_button);
                                 Context context = getApplicationContext();
                                 CharSequence text = "Please Select Distance";
+                                int duration = Toast.LENGTH_LONG;
+                                Toast.makeText(context, text,duration).show();
+                            }
+                            else if(mediaPlayer == null)
+                            {
+                                Context context = getApplicationContext();
+                                CharSequence text = "No Music Selected";
                                 int duration = Toast.LENGTH_LONG;
                                 Toast.makeText(context, text,duration).show();
                             }

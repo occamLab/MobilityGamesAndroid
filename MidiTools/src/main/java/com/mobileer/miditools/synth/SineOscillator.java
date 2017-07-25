@@ -48,7 +48,7 @@ public class SineOscillator extends SawOscillator {
     public float render() {
         // Convert raw sawtooth to sine.
         float phase = incrementWrapPhase();
-        return fastSin(phase) * getAmplitude();
+        return fastSin(phase) * 2* getAmplitude();
     }
 
 }
