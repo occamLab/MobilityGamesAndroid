@@ -62,7 +62,7 @@ import android.content.ServiceConnection;
 public class HelloMotionTrackingActivity extends Activity implements OnItemSelectedListener{
     public static final String TAG = HelloMotionTrackingActivity.class.getSimpleName();
     public static final String EXTRA_KEY_PERMISSIONTYPE = "PERMISSIONTYPE";
-
+    static final int SELECT_MUSIC_REQUEST = 10;
     //
     // Tag Detection Variables
     //
@@ -134,6 +134,7 @@ public class HelloMotionTrackingActivity extends Activity implements OnItemSelec
     }
 
     public boolean successfullyDetected(double[] tagDetection) {
+        // TangoJniNative.returnArrayFisheye will set tagDetection[0] to -1 if no tag was found
         return tagDetection[0] >= 0.0;
     }
     public double[] calcCaneTip(double[] tagPosition, double[] tagZNorm) {
@@ -296,9 +297,20 @@ public class HelloMotionTrackingActivity extends Activity implements OnItemSelec
         selectMusicButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                // Pause the Game
+                if(mIsPaused == false){
+                    startStopButton.setText("Start Game");
+                    mIsPaused = true;
+                }
+                // Release the Media Player
+                if(mediaPlayer != null){
+                    mediaPlayer.release();
+                }
+                // Open the Pick External Music File activity
                 mediaPlayer = null;
-                Intent intent = new Intent(Intent.ACTION_PICK, android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI);
-                startActivityForResult(intent, 10);
+                Intent intent = new Intent(Intent.ACTION_PICK,
+                        android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI);
+                startActivityForResult(intent, SELECT_MUSIC_REQUEST);
             }
         });
 
@@ -318,7 +330,7 @@ public class HelloMotionTrackingActivity extends Activity implements OnItemSelec
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 
-        if(resultCode == RESULT_OK && requestCode == 10){
+        if(resultCode == RESULT_OK && requestCode == SELECT_MUSIC_REQUEST){
             uriSound = data.getData();
             contextSound = this;
             setVariable(contextSound, uriSound);
@@ -358,6 +370,7 @@ public class HelloMotionTrackingActivity extends Activity implements OnItemSelec
             prevCanePositionY = canePositionY;
         }
 
+        // the cane has passed the midline (y = 0)
         if (prevCanePositionY * canePositionY < 0) {
             sweepCounter++;
             String utterance = Integer.toString(sweepCounter);
@@ -410,14 +423,8 @@ public class HelloMotionTrackingActivity extends Activity implements OnItemSelec
                     startStopButton.setOnClickListener(new View.OnClickListener() {
                         public void onClick(View v) {
 
-                            /*
-                            * Creates a new Intent to start the WallSensingService
-                            * IntentService. Passes a URI in the
-                            * Intent's "data" field.
-                            */
                             if (mIsPaused) {
                                 startStopButton.setText("Pause Game");
-                                Log.w(TAG, "Starting Wall Sensing Service");
                                 mIsPaused = false;
                                 mediaPlayer.start();
 
@@ -426,8 +433,6 @@ public class HelloMotionTrackingActivity extends Activity implements OnItemSelec
                                 runThread.start();
                             }
                             else {
-                                Log.w(TAG, "Stopping Wall Sensing Service");
-
                                 mediaPlayer.pause();
                                 startStopButton.setText("Start Game");
                                 mIsPaused = true;
@@ -437,34 +442,6 @@ public class HelloMotionTrackingActivity extends Activity implements OnItemSelec
 
 
                     });
-
-                    selectMusicButton.setOnClickListener(new View.OnClickListener() {
-                        @Override
-                        public void onClick(View view) {
-                            if(mIsPaused == false){
-                                Log.w(TAG, "Stopping Wall Sensing Service");
-
-                                // Since the original wall sensing intent is a forever running job, we can't
-                                // send another work request action to stop the service. It would forever be
-                                // queued. Instead, we use local broadcasters to communicate the stop request
-//                                // as a workaround.
-//                                Intent stopServiceIntent =
-//                                        new Intent(Constants.BROADCAST_WALLSENSINGSERVICE_STOP)
-//                                                // Puts the status into the Intent
-//                                                .putExtra(Constants.WALLSENSINGSERVICE_STOP, true);
-//                                LocalBroadcastManager.getInstance(view.getContext()).sendBroadcast(stopServiceIntent);
-                                startStopButton.setText("Start Game");
-                                mIsPaused = true;
-                            }
-                            if(mediaPlayer != null){
-                                mediaPlayer.release();
-                            }
-                            mediaPlayer = null;
-                            Intent intent = new Intent(Intent.ACTION_PICK, android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI);
-                            startActivityForResult(intent, 10);
-                        }
-                    });
-
                 }
 
             });
