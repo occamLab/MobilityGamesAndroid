@@ -132,6 +132,9 @@ public class HelloMotionTrackingActivity extends Activity implements OnItemSelec
         // Do nothing.
     }
 
+    public boolean successfullyDetected(double[] tagDetection) {
+        return tagDetection[0] >= 0.0;
+    }
     public double[] calcCaneTip(double[] tagPosition, double[] tagZNorm) {
         double[] tipPosition = new double[3];
         for (int i = 0; i < 3; i++) {
@@ -206,11 +209,14 @@ public class HelloMotionTrackingActivity extends Activity implements OnItemSelec
                                     // no need to display the image, there is already a more recent one that has been displayed
                                     continue;
                                 }
+
                                 // mark that we are going to display this image, and put the display of it on the UI event queue
                                 lastDisplayedImageTS = ts;
 
-                                // update cane tip pose
-                                canePositionY = calcCaneTip(tagPosition, tagZNorm)[1];
+                                if (successfullyDetected(tagDetection)) {
+                                    // update cane tip pose
+                                    canePositionY = calcCaneTip(tagPosition, tagZNorm)[1];
+                                }
 
                                 runOnUiThread(new Runnable() {
                                     @Override
@@ -231,7 +237,7 @@ public class HelloMotionTrackingActivity extends Activity implements OnItemSelec
                                         Bitmap image = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length);
                                         Bitmap mutableBitmap = image.copy(Bitmap.Config.ARGB_8888, true);
 
-                                        if (tagDetection[0] >= 0.0) {
+                                        if (successfullyDetected(tagDetection)) {
                                             Canvas canvas = new Canvas(mutableBitmap);
 
                                             Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
