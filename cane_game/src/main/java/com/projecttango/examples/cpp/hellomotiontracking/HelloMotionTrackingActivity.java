@@ -107,7 +107,7 @@ public class HelloMotionTrackingActivity extends Activity implements OnItemSelec
     // Cane Specific Variables
     //
     private int sweepCounter = 0;
-    private double tagDistance = 29;      // distance in inches along cane shaft, btwn tag and tip
+    private double tip2TagDistance = 29;      // distance in inches along cane shaft, btwn tag and tip
     private double canePositionY;
     private double prevCanePositionY;
 
@@ -132,10 +132,15 @@ public class HelloMotionTrackingActivity extends Activity implements OnItemSelec
         // Do nothing.
     }
 
-    public double[] calcCaneTip(double[] tagPosition) {
-        // TODO(rlouie): use the tagDistance variable to project
-        // For now, just return
-        return tagPosition;
+    public double[] calcCaneTip(double[] tagPosition, double[] tagZNorm) {
+        double[] tipPosition = new double[3];
+        for (int i = 0; i < 3; i++) {
+            // normal is pointing towards cane handle
+            // opposite direction of normal is the cane tip
+            tipPosition[i] =
+                    tagPosition[i] - tip2TagDistance * tagZNorm[i];
+        }
+        return tipPosition;
     }
 
     // Project Tango Service connection.
@@ -181,11 +186,13 @@ public class HelloMotionTrackingActivity extends Activity implements OnItemSelec
                             }
                             final int[] fisheyeStride = new int[1];
                             final byte[] fisheyePixels = new byte[fisheyeImageWidth*fisheyeImageHeight*3/2];
-                            final double[] tagDetection = new double[8];          // 4 points with 2 coordinates each
-                            final double[] tagPosition = new double[3];           // 3 coordinates, xyz
+                            final double[] tagDetection = new double[8];  // 4 points with 2 coordinates each
+                            final double[] tagPosition = new double[3];   // 3 coordinates, xyz
+                            final double[] tagZNorm = new double[3];      // 3 components of Z unit vector
 
                             // grab the pixels and any tag detections
-                            TangoJniNative.returnArrayFisheye(fisheyePixels, fisheyeStride, tagDetection, tagPosition);
+                            TangoJniNative.returnArrayFisheye(fisheyePixels, fisheyeStride,
+                                    tagDetection, tagPosition, tagZNorm);
                             framesProcessed++;
                             int startSlot = (int) Math.floor(startingTimeStamp*targetFrameRate);
                             final double frameRateRatio = framesProcessed/((float)globalSlot - startSlot);
@@ -203,7 +210,7 @@ public class HelloMotionTrackingActivity extends Activity implements OnItemSelec
                                 lastDisplayedImageTS = ts;
 
                                 // update cane tip pose
-                                canePositionY = calcCaneTip(tagPosition)[1];
+                                canePositionY = calcCaneTip(tagPosition, tagZNorm)[1];
 
                                 runOnUiThread(new Runnable() {
                                     @Override
@@ -275,8 +282,8 @@ public class HelloMotionTrackingActivity extends Activity implements OnItemSelec
         frameRateSpinner.setSelection(((int)targetFrameRate) - 1);      // subtract 1 since setSelection is by index, not by value
         frameRateSpinner.setOnItemSelectedListener(this);
 
-        startStopButton = (Button) findViewById(R.id.startStopButton);\
-        
+        startStopButton = (Button) findViewById(R.id.startStopButton);
+
         //Select the music you want
         selectMusicButton = (Button) findViewById(R.id.selectMusic);
         selectMusicButton.setOnClickListener(new View.OnClickListener() {

@@ -73,7 +73,8 @@ public class TangoJniNative {
     public static native void returnArrayFisheye(byte[] fisheyePixels,
                                                  int[] stride,
                                                  double[] tagDetection,
-                                                 double[] tagPosition);
+                                                 double[] tagPosition,
+                                                 double[] tagZNorm);
 
     public static native double getFisheyeFrameTimestamp();
 
