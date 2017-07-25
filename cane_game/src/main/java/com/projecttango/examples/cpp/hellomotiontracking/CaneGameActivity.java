@@ -43,7 +43,6 @@ import android.graphics.Paint;
 import android.graphics.Color;
 import android.graphics.Matrix;
 import android.speech.tts.TextToSpeech;
-import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -61,7 +60,6 @@ import android.content.ServiceConnection;
  */
 public class CaneGameActivity extends Activity implements OnItemSelectedListener{
     public static final String TAG = CaneGameActivity.class.getSimpleName();
-    public static final String EXTRA_KEY_PERMISSIONTYPE = "PERMISSIONTYPE";
     static final int SELECT_MUSIC_REQUEST = 10;
     //
     // Tag Detection Variables
