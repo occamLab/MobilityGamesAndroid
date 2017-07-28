@@ -314,8 +314,10 @@ public class ConfigActivity extends Activity {
         /*
          * Handle Intents here.
          */
+            // Converting meters to feet
             mWallDist = 3.28 * intent.getDoubleExtra(Constants.WALLDISTANCE, 0.0);
         }
+
     }
 
     public void setVariable(Context context, Uri uri){
@@ -386,7 +388,7 @@ public class ConfigActivity extends Activity {
                             {
                                 mButton.setText("Play");
                                 mButton.setTextColor(0xFF808080);
-                                mButton.setBackgroundResource(R.drawable.netural_button);
+                                mButton.setBackgroundResource(R.drawable.neutral_button);
                                 Context context = getApplicationContext();
                                 CharSequence text = "No Music Selected";
                                 int duration = Toast.LENGTH_LONG;

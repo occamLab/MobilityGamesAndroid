@@ -69,7 +69,7 @@
         android:textSize="50sp"
         android:padding="30dp"
         android:layout_margin="20dp"
-        android:background="@drawable/netural_button"
+        android:background="@drawable/neutral_button"
         android:layout_centerHorizontal="true"
         android:layout_above="@+id/midiLayout"/>
 
