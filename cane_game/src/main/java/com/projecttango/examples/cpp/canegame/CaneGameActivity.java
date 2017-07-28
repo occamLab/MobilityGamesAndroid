@@ -534,6 +534,7 @@ public class CaneGameActivity extends Activity implements OnItemSelectedListener
                                 mediaPlayer.pause();
                                 mIsPaused = true;
                                 setButtonStart();
+                                sweepCounter = 0;
 
                             }
                         }
@@ -580,20 +581,20 @@ public class CaneGameActivity extends Activity implements OnItemSelectedListener
     //Set the play/puase button ready to go
     public void setButtonStart()
     {
-        startStopButton.setText("Play");
+        startStopButton.setText(R.string.start_button);
         startStopButton.setTextColor(0xFF00FF00); //green
         startStopButton.setBackgroundResource(R.drawable.start_button);
     }
 
     public void setButtonPause()
     {
-        startStopButton.setText("Pause");
+        startStopButton.setText(R.string.pause_button);
         startStopButton.setTextColor(0xFFFF0000); //red
         startStopButton.setBackgroundResource(R.drawable.pause_button);
     }
 
     public void setButtonNeutral() {
-        startStopButton.setText("Play");
+        startStopButton.setText(R.string.neutral_button);
         startStopButton.setTextColor(0xFF808080); // gray
         startStopButton.setBackgroundResource(R.drawable.neutral_button);
     }

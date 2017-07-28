@@ -4,8 +4,9 @@
     <string name="app_name">Cane Game</string>
     <string name="app_name_long">Cane Game</string>
     <string name="main_page_string">See Logcat for pose update :D</string>
-    <string name="play_button">Play</string>
-    <string name="pause_button">Pause</string>
+    <string name="start_button">Play</string>
+    <string name="pause_button">Stop</string>
+    <string name="neutral_button">Play</string>
     <string name="selectmusic">Select Music</string>
     <string name="BLACK">#ff000000</string>
 </resources>
