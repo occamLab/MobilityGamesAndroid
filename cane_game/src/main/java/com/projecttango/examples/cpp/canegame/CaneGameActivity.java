@@ -546,11 +546,11 @@ public class CaneGameActivity extends Activity implements OnItemSelectedListener
 
             });
             mediaPlayer.prepareAsync();
-            setButtonStart();
         }
         catch (IOException e) {
             e.printStackTrace();
         }
+        setButtonStart();
     }
 
     public CompoundButton.OnCheckedChangeListener rewardAtCheckBoxListener = new CompoundButton.OnCheckedChangeListener() {
