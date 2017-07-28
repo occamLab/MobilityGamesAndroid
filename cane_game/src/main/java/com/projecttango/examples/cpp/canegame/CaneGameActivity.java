@@ -543,6 +543,7 @@ public class CaneGameActivity extends Activity implements OnItemSelectedListener
 
             });
             mediaPlayer.prepareAsync();
+            setButtonStart();
         }
         catch (IOException e) {
             e.printStackTrace();
