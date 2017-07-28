@@ -525,7 +525,6 @@ public class CaneGameActivity extends Activity implements OnItemSelectedListener
                             if (mIsPaused) {
                                 startStopButton.setText("Pause Game");
                                 mIsPaused = false;
-//                                mediaPlayer.start();
 
                                 //Start the audio thread
                                 Thread runThread = new Thread(runnable);
@@ -569,10 +568,10 @@ public class CaneGameActivity extends Activity implements OnItemSelectedListener
     };
 
     public void setRewardCheckBoxes(Integer i, int id) {
-//
         CheckBox rewardAtCheckBox = (CheckBox) findViewById(id);
         rewardAtCheckBox.setOnCheckedChangeListener(rewardAtCheckBoxListener);
         rewardAtCheckBoxes.put(i, rewardAtCheckBox);
-        doRewardAt.put(i, false);
+        doRewardAt.put(i, true);
+        rewardAtCheckBox.setChecked(true);
     };
 }
