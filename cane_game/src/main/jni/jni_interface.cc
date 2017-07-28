@@ -278,22 +278,21 @@ void DisconnectTango()
 extern "C" {
 
 JNIEXPORT void JNICALL
-Java_com_projecttango_examples_cpp_hellomotiontracking_TangoJniNative_setBinder(JNIEnv * env , jobject obj, jobject
+Java_com_projecttango_examples_cpp_canegame_TangoJniNative_setBinder(JNIEnv * env , jobject obj, jobject
 service )
 {
     TangoSetBinder(env, service ) ;
 }
 
 JNIEXPORT void JNICALL
-Java_com_projecttango_examples_cpp_hellomotiontracking_TangoJniNative_setupConfig(JNIEnv* env,
+Java_com_projecttango_examples_cpp_canegame_TangoJniNative_setupConfig(JNIEnv* env,
                                                                                   jobject obj)
 {
     TangoSetConfig();
-
 }
 
 JNIEXPORT void JNICALL
-Java_com_projecttango_examples_cpp_hellomotiontracking_TangoJniNative_connectCallbacks(JNIEnv
+Java_com_projecttango_examples_cpp_canegame_TangoJniNative_connectCallbacks(JNIEnv
                                                                                        * env,
                                                                                        jobject obj)
 {
@@ -302,7 +301,7 @@ Java_com_projecttango_examples_cpp_hellomotiontracking_TangoJniNative_connectCal
 }
 
 JNIEXPORT void JNICALL
-Java_com_projecttango_examples_cpp_hellomotiontracking_TangoJniNative_connect(JNIEnv* env,
+Java_com_projecttango_examples_cpp_canegame_TangoJniNative_connect(JNIEnv* env,
                                                                               jobject obj
 )
 {
@@ -311,7 +310,7 @@ Java_com_projecttango_examples_cpp_hellomotiontracking_TangoJniNative_connect(JN
 }
 
 JNIEXPORT void JNICALL
-Java_com_projecttango_examples_cpp_hellomotiontracking_TangoJniNative_disconnect(JNIEnv
+Java_com_projecttango_examples_cpp_canegame_TangoJniNative_disconnect(JNIEnv
                                                                                  * env,
                                                                                  jobject obj
 )
@@ -322,7 +321,7 @@ Java_com_projecttango_examples_cpp_hellomotiontracking_TangoJniNative_disconnect
 
 
 JNIEXPORT void
-JNICALL Java_com_projecttango_examples_cpp_hellomotiontracking_TangoJniNative_returnArrayFisheye(
+JNICALL Java_com_projecttango_examples_cpp_canegame_TangoJniNative_returnArrayFisheye(
         JNIEnv *env, jobject This, jbyteArray pixels, jintArray stride, jdoubleArray tagDetection,
         jdoubleArray tagPosition, jdoubleArray tagZNorm) {
     // this could work better across threads
@@ -480,7 +479,7 @@ JNICALL Java_com_projecttango_examples_cpp_hellomotiontracking_TangoJniNative_re
 
 
 JNIEXPORT jdouble
-JNICALL Java_com_projecttango_examples_cpp_hellomotiontracking_TangoJniNative_getFisheyeFrameTimestamp(
+JNICALL Java_com_projecttango_examples_cpp_canegame_TangoJniNative_getFisheyeFrameTimestamp(
         JNIEnv *env, jobject This) {
     double lastFisheyeFrameTimeStampCopy;
 

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.projecttango.examples.cpp.hellomotiontracking;
+package com.projecttango.examples.cpp.canegame;
 
 import android.app.Activity;
 import android.os.IBinder;
@@ -36,7 +36,7 @@ public class TangoJniNative {
                 TangoInitializationHelper.ARCH_ERROR) {
             Log.e("TangoJNINative", "ERROR! Unable to load libtango_client_api.so!");
         }
-        System.loadLibrary("hello_motion_tracking");
+        System.loadLibrary("cane_game");
     }
 
     /**

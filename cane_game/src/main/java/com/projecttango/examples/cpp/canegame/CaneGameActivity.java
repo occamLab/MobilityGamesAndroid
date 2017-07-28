@@ -16,12 +16,13 @@
 
 // TODO: handle disconnects from the socket server (reset everything)
 // TODO: PointCloud2 instead of PointCloud (faster)
-package com.projecttango.examples.cpp.hellomotiontracking;
+package com.projecttango.examples.cpp.canegame;
 
 import com.projecttango.examples.cpp.util.TangoInitializationHelper;
 
 import android.Manifest;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.YuvImage;
@@ -46,11 +47,10 @@ import android.graphics.Paint;
 import android.graphics.Color;
 import android.graphics.Matrix;
 import android.speech.tts.TextToSpeech;
+import android.support.v4.content.ContextCompat;
 import android.support.v4.util.ArrayMap;
 import android.util.Log;
-import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
@@ -62,6 +62,9 @@ import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemSelectedListener;
 import android.content.ComponentName;
 import android.content.ServiceConnection;
+import android.support.v4.app.ActivityCompat;
+import android.app.AlertDialog;
+
 
 /**
  * Main activity controls Tango lifecycle.
@@ -69,6 +72,8 @@ import android.content.ServiceConnection;
 public class CaneGameActivity extends Activity implements OnItemSelectedListener{
     public static final String TAG = CaneGameActivity.class.getSimpleName();
     static final int SELECT_MUSIC_REQUEST = 10;
+    private static final String CAMERA_PERMISSION = Manifest.permission.CAMERA;
+    private static final int CAMERA_PERMISSION_CODE = 0;
     //
     // Tag Detection Variables
     //
@@ -82,7 +87,7 @@ public class CaneGameActivity extends Activity implements OnItemSelectedListener
     private Object fisheyeImageLock = new Object();
     private Object updateImageViewLock = new Object();
 
-    // hardcoded for now :(
+    // hardcoded for now
     private static int fisheyeImageWidth = 640;
     private static int fisheyeImageHeight = 480;
 
@@ -120,6 +125,59 @@ public class CaneGameActivity extends Activity implements OnItemSelectedListener
     private Set<Integer> rewardIncrements = new HashSet<Integer>(Arrays.asList(10, 20, 50));
     private ArrayMap<Integer, Boolean> doRewardAt = new ArrayMap<>();
     private ArrayMap<Integer, CheckBox> rewardAtCheckBoxes = new ArrayMap<>();
+
+
+    /**
+     * Check to see if we have the necessary permissions for this app; ask for them if we don't.
+     *
+     * @return True if we have the necessary permissions, false if we don't.
+     */
+    private boolean checkAndRequestPermissions() {
+        if (!hasCameraPermission()) {
+            requestCameraPermission();
+            return false;
+        }
+        return true;
+    }
+
+
+    /**
+     * Check to see of we have the necessary permissions for this app.
+     */
+    private boolean hasCameraPermission() {
+        return ContextCompat.checkSelfPermission(this, CAMERA_PERMISSION) ==
+                PackageManager.PERMISSION_GRANTED;
+    }
+
+    /**
+     * Request the necessary permissions for this app.
+     */
+    private void requestCameraPermission() {
+        if (ActivityCompat.shouldShowRequestPermissionRationale(this, CAMERA_PERMISSION)) {
+            showRequestPermissionRationale();
+        } else {
+            ActivityCompat.requestPermissions(this, new String[]{CAMERA_PERMISSION},
+                    CAMERA_PERMISSION_CODE);
+        }
+    }
+
+    /**
+     * If the user has declined the permission before, we have to explain that the app needs this
+     * permission.
+     */
+    private void showRequestPermissionRationale() {
+        final AlertDialog dialog = new AlertDialog.Builder(this)
+                .setMessage("Cane game requires camera permission")
+                .setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        ActivityCompat.requestPermissions(CaneGameActivity.this,
+                                new String[]{CAMERA_PERMISSION}, CAMERA_PERMISSION_CODE);
+                    }
+                })
+                .create();
+        dialog.show();
+    }
 
     public static Bitmap rotateBitmap(Bitmap source, float angle) {
         Matrix matrix = new Matrix();
@@ -207,6 +265,8 @@ public class CaneGameActivity extends Activity implements OnItemSelectedListener
                             // grab the pixels and any tag detections
                             TangoJniNative.returnArrayFisheye(fisheyePixels, fisheyeStride,
                                     tagDetection, tagPosition, tagZNorm);
+
+
                             framesProcessed++;
                             int startSlot = (int) Math.floor(startingTimeStamp*targetFrameRate);
                             final double frameRateRatio = framesProcessed/((float)globalSlot - startSlot);
@@ -376,6 +436,14 @@ public class CaneGameActivity extends Activity implements OnItemSelectedListener
         super.onStop();
     }
 
+
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        checkAndRequestPermissions();
+    }
+
     @Override
     protected void onPause() {
         super.onPause();
@@ -399,8 +467,8 @@ public class CaneGameActivity extends Activity implements OnItemSelectedListener
 
             // Reached a reward increment
             if ((rewardIncrements.contains(sweepCounter)) &&
-                    (doRewardAt.get(sweepCounter) == true)) {
-
+                    (doRewardAt.get(sweepCounter))) {
+                mediaPlayer.start();
             }
             else {
                 // Count the sweeps when not playing music and not counting previous
@@ -459,7 +527,7 @@ public class CaneGameActivity extends Activity implements OnItemSelectedListener
                             if (mIsPaused) {
                                 startStopButton.setText("Pause Game");
                                 mIsPaused = false;
-                                mediaPlayer.start();
+//                                mediaPlayer.start();
 
                                 //Start the audio thread
                                 Thread runThread = new Thread(runnable);

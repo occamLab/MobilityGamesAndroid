@@ -18,4 +18,4 @@
  * Native JNI hello tango example.
  */
 
-package com.projecttango.examples.cpp.hellomotiontracking;
+package com.projecttango.examples.cpp.canegame;
