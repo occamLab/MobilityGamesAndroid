@@ -532,7 +532,9 @@ public class CaneGameActivity extends Activity implements OnItemSelectedListener
                             }
                             else {
                                 mediaPlayer.pause();
+                                mIsPaused = true;
                                 setButtonStart();
+
                             }
                         }
 
