@@ -238,9 +238,9 @@ public class SynthEngine extends MidiReceiver {
     public SynthVoice createVoice(int program) {
         // For every odd program number use a sine wave.
         if ((program & 1) == 1) {
-            return new SineVoice(mSampleRate);
-        } else {
             return new SawVoice(mSampleRate);
+        } else {
+            return new SineVoice(mSampleRate);
         }
     }
 
@@ -252,7 +252,7 @@ public class SynthEngine extends MidiReceiver {
      */
     public void noteOn(int channel, int noteIndex, int velocity) {
         if (velocity == 0) {
-            noteOff(channel, noteIndex, velocity);
+            noteOff(channel,noteIndex, velocity);
         } else {
             mVoices.remove(noteIndex);
             SynthVoice voice;

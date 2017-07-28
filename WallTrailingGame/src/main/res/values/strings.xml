@@ -9,10 +9,9 @@
     <string name="failed_permissions">Permissions required!</string>
 
     <string name="receivers_text">Receivers for Keys: </string>
-    <string-array name="receivers">
-        <item>"none"</item>
-    </string-array>
+
     <string-array name="distance">
+        <item>Wall Distance (feet)</item>
         <item>1.0</item>
         <item>1.5</item>
         <item>2.0</item>
@@ -21,4 +20,5 @@
         <item>3.5</item>
         <item>4.0</item>
     </string-array>
+    <string name="select_dist">Select A Distance</string>
 </resources>

@@ -15,6 +15,7 @@ import android.os.Bundle;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.content.Intent;
 import android.view.*;
@@ -27,6 +28,7 @@ import com.mobileer.miditools.MidiInputPortSelector;
 import com.mobileer.miditools.synth.LatencyController;
 
 import java.io.IOException;
+import java.util.ArrayList;
 
 public class ConfigActivity extends Activity {
 
@@ -38,10 +40,13 @@ public class ConfigActivity extends Activity {
     Button selectButton = null;
     Spinner mSelectSpinner = null;
     MediaPlayer mediaPlayer = null;
-    double mRewardSoundDist = 1.0; // Distance at which reward sounds are played
+    double mRewardSoundDist = 0.0; // Distance at which reward sounds are played
     double mMaxFreqDist = 5.0; // Distance at which frequency maxes out
     Uri uriSound;
     Context contextSound;
+    ArrayAdapter<String> arrayAdapter;
+    ArrayList<String> array = new ArrayList<>();
+    String conString = "Wall Distance (feet)";
 
     // MIDI attributes
     private MidiInputPortSelector mKeyboardReceiverSelector;
@@ -56,12 +61,50 @@ public class ConfigActivity extends Activity {
         super.onCreate(saveIntentState);
         setContentView(R.layout.activity_config);
 
+        array.add(conString);
+        array.add("1.0");
+        array.add("1.5");
+        array.add("2.0");
+        array.add("2.5");
+        array.add("3.0");
+        array.add("3.5");
+        array.add("4.0");
+
+
         //Initializing variable mSelectSpinner
         mSelectSpinner = (Spinner) findViewById(R.id.spinnerDistance);
+        arrayAdapter = new ArrayAdapter<String>(this, R.layout.spinner_item, array);
+        mSelectSpinner.setAdapter(arrayAdapter);
         mSelectSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 Object item = parent.getItemAtPosition(position);
-                mRewardSoundDist = Double.parseDouble(item.toString());
+                //When is already running to catch error
+                //music will keep on play when you pause the game when you change the distance
+                if(mRewardSoundDist != 0.0){
+                    if(!item.toString().equals("Wall Distance (feet)")){
+                        if(!item.toString().equals(conString)){
+                            mRewardSoundDist = Double.parseDouble(item.toString());
+                        }
+                    }
+                }
+                else{
+                    //The use hasn't selected the music but has selected the distance
+                    if(mediaPlayer == null && !item.toString().equals("Wall Distance (feet)"))
+                    {
+                        mButton.setText("Play");
+                        if(!item.toString().equals(conString)){
+                            mRewardSoundDist = Double.parseDouble(item.toString());
+                        }
+                    }
+                    else
+                    {
+                        //The user has selected the music and distance
+                        if(!item.toString().equals(conString)){
+                            setButtonStart();
+                            mRewardSoundDist = Double.parseDouble(item.toString());
+                        }
+                    }
+                }
             }
             public void onNothingSelected(AdapterView<?> parent) {
             }
@@ -96,6 +139,12 @@ public class ConfigActivity extends Activity {
         // MIDI SETUP
         if (getPackageManager().hasSystemFeature(PackageManager.FEATURE_MIDI)) {
             setupMidi();
+
+            Spinner spinner = (Spinner) findViewById(R.id.spinner_receivers);
+            // set the second element
+            if(spinner.getCount() >= 2){
+                spinner.setSelection(1);
+            }
         } else {
             Toast.makeText(this, "MIDI not supported!", Toast.LENGTH_LONG)
                     .show();
@@ -112,12 +161,40 @@ public class ConfigActivity extends Activity {
 
     }
 
+    //Set the play/puase button ready to go
+    public void setButtonStart()
+    {
+        mButton.setText("Play");
+        mButton.setTextColor(0xFF00FF00); //green
+        mButton.setBackgroundResource(R.drawable.start_button);
+    }
+
+    public void setButtonPause()
+    {
+        mButton.setText("Pause");
+        mButton.setTextColor(0xFFFF0000); //red
+        mButton.setBackgroundResource(R.drawable.pause_button);
+    }
+
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 
         if(resultCode == RESULT_OK && requestCode == 10){
             uriSound = data.getData();
             contextSound = this;
+            //the user hasn't selected a distance
+            if(mRewardSoundDist == 0.0)
+            {
+                mButton.setText("Play");
+            }
+            else
+            {
+                //user selected the distance and music
+                mButton.setText("Play");
+                mButton.setTextColor(0xFF00FF00); //green
+                mButton.setBackgroundResource(R.drawable.start_button);
+            }
+            //Goes to the set up
             setVariable(contextSound, uriSound);
         }
     }
@@ -237,11 +314,14 @@ public class ConfigActivity extends Activity {
         /*
          * Handle Intents here.
          */
-            mWallDist = intent.getDoubleExtra(Constants.WALLDISTANCE, 0.0);
+            // Converting meters to feet
+            mWallDist = 3.28 * intent.getDoubleExtra(Constants.WALLDISTANCE, 0.0);
         }
+
     }
 
     public void setVariable(Context context, Uri uri){
+        //this give permission for external data
         if (context.checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
             // Should we show an explanation?
             if (shouldShowRequestPermissionRationale(Manifest.permission.READ_EXTERNAL_STORAGE)) {
@@ -278,7 +358,7 @@ public class ConfigActivity extends Activity {
                                     int semiTone = pitchFromDistance();
                                     noteOn(0, mLowestNoteOffset + semiTone, DEFAULT_VELOCITY);
                                     try {
-                                        Thread.sleep(1000);
+                                        Thread.sleep(500);
                                     } catch (InterruptedException e) {
                                         e.printStackTrace();
                                     }
@@ -297,40 +377,60 @@ public class ConfigActivity extends Activity {
                     mButton.setOnClickListener(new View.OnClickListener() {
                         public void onClick(View v) {
 
-                            /*
-                            * Creates a new Intent to start the WallSensingService
-                            * IntentService. Passes a URI in the
-                            * Intent's "data" field.
-                            */
-                            if (mIsPaused) {
-                                mButton.setText("Pause Game");
-                                Log.w(TAG, "Starting Wall Sensing Service");
-                                mIsPaused = false;
-                                mediaPlayer.start();
-
-                                //Start the audio thread
-                                Thread runThread = new Thread(runnable);
-                                runThread.start();
-
-                                // Send work request to do wall sensing with an intent
-                                mServiceIntent = new Intent(v.getContext(), WallSensingService.class);
-                                startService(mServiceIntent);
+                            if(mRewardSoundDist == 0.0)
+                            {
+                                Context context = getApplicationContext();
+                                CharSequence text = "Please Select Distance";
+                                int duration = Toast.LENGTH_LONG;
+                                Toast.makeText(context, text,duration).show();
                             }
-                            else {
-                                Log.w(TAG, "Stopping Wall Sensing Service");
+                            else if(mediaPlayer == null)
+                            {
+                                mButton.setText("Play");
+                                mButton.setTextColor(0xFF808080);
+                                mButton.setBackgroundResource(R.drawable.neutral_button);
+                                Context context = getApplicationContext();
+                                CharSequence text = "No Music Selected";
+                                int duration = Toast.LENGTH_LONG;
+                                Toast.makeText(context, text,duration).show();
+                            }
+                            else
+                            {
+                                /*
+                                * Creates a new Intent to start the WallSensingService
+                                * IntentService. Passes a URI in the
+                                * Intent's "data" field.
+                                */
+                                if (mIsPaused) {
+                                    setButtonPause();
+                                    Log.w(TAG, "Starting Wall Sensing Service");
+                                    mIsPaused = false;
+                                    mediaPlayer.start();
 
-                                // Since the original wall sensing intent is a forever running job, we can't
-                                // send another work request action to stop the service. It would forever be
-                                // queued. Instead, we use local broadcasters to communicate the stop request
-                                // as a workaround.
-                                Intent stopServiceIntent =
-                                        new Intent(Constants.BROADCAST_WALLSENSINGSERVICE_STOP)
-                                                // Puts the status into the Intent
-                                                .putExtra(Constants.WALLSENSINGSERVICE_STOP, true);
-                                LocalBroadcastManager.getInstance(v.getContext()).sendBroadcast(stopServiceIntent);
-                                mediaPlayer.pause();
-                                mButton.setText("Start Game");
-                                mIsPaused = true;
+                                    //Start the audio thread
+                                    Thread runThread = new Thread(runnable);
+                                    runThread.start();
+
+                                    // Send work request to do wall sensing with an intent
+                                    mServiceIntent = new Intent(v.getContext(), WallSensingService.class);
+                                    startService(mServiceIntent);
+                                }
+                                else {
+                                    Log.w(TAG, "Stopping Wall Sensing Service");
+
+                                    // Since the original wall sensing intent is a forever running job, we can't
+                                    // send another work request action to stop the service. It would forever be
+                                    // queued. Instead, we use local broadcasters to communicate the stop request
+                                    // as a workaround.
+                                    Intent stopServiceIntent =
+                                            new Intent(Constants.BROADCAST_WALLSENSINGSERVICE_STOP)
+                                                    // Puts the status into the Intent
+                                                    .putExtra(Constants.WALLSENSINGSERVICE_STOP, true);
+                                    LocalBroadcastManager.getInstance(v.getContext()).sendBroadcast(stopServiceIntent);
+                                    mediaPlayer.pause();
+                                    setButtonStart();
+                                    mIsPaused = true;
+                                }
                             }
                         }
 
@@ -353,7 +453,7 @@ public class ConfigActivity extends Activity {
                                                 // Puts the status into the Intent
                                                 .putExtra(Constants.WALLSENSINGSERVICE_STOP, true);
                                 LocalBroadcastManager.getInstance(view.getContext()).sendBroadcast(stopServiceIntent);
-                                mButton.setText("Start Game");
+                                setButtonStart();
                                 mIsPaused = true;
                             }
                             if(mediaPlayer != null){
