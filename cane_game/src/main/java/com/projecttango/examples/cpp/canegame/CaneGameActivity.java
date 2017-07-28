@@ -459,8 +459,6 @@ public class CaneGameActivity extends Activity implements OnItemSelectedListener
             prevCanePositionY = canePositionY;
         }
 
-        Log.i(TAG, "Reward at 10? " + Boolean.toString(doRewardAt.get(10)));
-
         // the cane has passed the midline (y = 0)
         if (prevCanePositionY * canePositionY < 0) {
             sweepCounter++;
@@ -472,7 +470,7 @@ public class CaneGameActivity extends Activity implements OnItemSelectedListener
             }
             else {
                 // Count the sweeps when not playing music and not counting previous
-                if (!textToSpeech.isSpeaking()) {
+                if (!textToSpeech.isSpeaking() && !mediaPlayer.isPlaying()) {
                     String utterance = Integer.toString(sweepCounter);
                     textToSpeech.speak(utterance, TextToSpeech.QUEUE_ADD, null, null);
                 }
