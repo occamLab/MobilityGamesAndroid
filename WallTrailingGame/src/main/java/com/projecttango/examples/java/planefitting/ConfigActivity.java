@@ -46,6 +46,7 @@ public class ConfigActivity extends Activity {
     Context contextSound;
     ArrayAdapter<String> arrayAdapter;
     ArrayList<String> array = new ArrayList<>();
+    String conString = "Wall Distance (feet)";
 
     // MIDI attributes
     private MidiInputPortSelector mKeyboardReceiverSelector;
@@ -60,7 +61,7 @@ public class ConfigActivity extends Activity {
         super.onCreate(saveIntentState);
         setContentView(R.layout.activity_config);
 
-        array.add("Wall Distance (feet)");
+        array.add(conString);
         array.add("1.0");
         array.add("1.5");
         array.add("2.0");
@@ -77,25 +78,29 @@ public class ConfigActivity extends Activity {
         mSelectSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 Object item = parent.getItemAtPosition(position);
+                //When is already running to catch error
+                //music will keep on play when you pause the game when you change the distance
                 if(mRewardSoundDist != 0.0){
                     if(!item.toString().equals("Wall Distance (feet)")){
-                        mRewardSoundDist = Double.parseDouble(item.toString());
+                        if(!item.toString().equals(conString)){
+                            mRewardSoundDist = Double.parseDouble(item.toString());
+                        }
                     }
                 }
                 else{
+                    //The use hasn't selected the music but has selected the distance
                     if(mediaPlayer == null && !item.toString().equals("Wall Distance (feet)"))
                     {
                         mButton.setText("Play");
-                        if(!item.toString().equals("Wall Distance (feet)")){
+                        if(!item.toString().equals(conString)){
                             mRewardSoundDist = Double.parseDouble(item.toString());
                         }
                     }
                     else
                     {
-                        if(!item.toString().equals("Wall Distance (feet)")){
-                            mButton.setText("Play");
-                            mButton.setTextColor(0xFF00FF00);
-                            mButton.setBackgroundResource(R.drawable.start_button);
+                        //The user has selected the music and distance
+                        if(!item.toString().equals(conString)){
+                            setButtonStart();
                             mRewardSoundDist = Double.parseDouble(item.toString());
                         }
                     }
@@ -134,6 +139,12 @@ public class ConfigActivity extends Activity {
         // MIDI SETUP
         if (getPackageManager().hasSystemFeature(PackageManager.FEATURE_MIDI)) {
             setupMidi();
+
+            Spinner spinner = (Spinner) findViewById(R.id.spinner_receivers);
+            // set the second element
+            if(spinner.getCount() >= 2){
+                spinner.setSelection(1);
+            }
         } else {
             Toast.makeText(this, "MIDI not supported!", Toast.LENGTH_LONG)
                     .show();
@@ -150,22 +161,40 @@ public class ConfigActivity extends Activity {
 
     }
 
+    //Set the play/puase button ready to go
+    public void setButtonStart()
+    {
+        mButton.setText("Play");
+        mButton.setTextColor(0xFF00FF00); //green
+        mButton.setBackgroundResource(R.drawable.start_button);
+    }
+
+    public void setButtonPause()
+    {
+        mButton.setText("Pause");
+        mButton.setTextColor(0xFFFF0000); //red
+        mButton.setBackgroundResource(R.drawable.pause_button);
+    }
+
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 
         if(resultCode == RESULT_OK && requestCode == 10){
             uriSound = data.getData();
             contextSound = this;
+            //the user hasn't selected a distance
             if(mRewardSoundDist == 0.0)
             {
                 mButton.setText("Play");
             }
             else
             {
+                //user selected the distance and music
                 mButton.setText("Play");
-                mButton.setTextColor(0xFF00FF00);
+                mButton.setTextColor(0xFF00FF00); //green
                 mButton.setBackgroundResource(R.drawable.start_button);
             }
+            //Goes to the set up
             setVariable(contextSound, uriSound);
         }
     }
@@ -290,6 +319,7 @@ public class ConfigActivity extends Activity {
     }
 
     public void setVariable(Context context, Uri uri){
+        //this give permission for external data
         if (context.checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
             // Should we show an explanation?
             if (shouldShowRequestPermissionRationale(Manifest.permission.READ_EXTERNAL_STORAGE)) {
@@ -347,9 +377,6 @@ public class ConfigActivity extends Activity {
 
                             if(mRewardSoundDist == 0.0)
                             {
-                                mButton.setText("Play");
-                                mButton.setTextColor(0xFF808080);
-                                mButton.setBackgroundResource(R.drawable.netural_button);
                                 Context context = getApplicationContext();
                                 CharSequence text = "Please Select Distance";
                                 int duration = Toast.LENGTH_LONG;
@@ -357,6 +384,9 @@ public class ConfigActivity extends Activity {
                             }
                             else if(mediaPlayer == null)
                             {
+                                mButton.setText("Play");
+                                mButton.setTextColor(0xFF808080);
+                                mButton.setBackgroundResource(R.drawable.netural_button);
                                 Context context = getApplicationContext();
                                 CharSequence text = "No Music Selected";
                                 int duration = Toast.LENGTH_LONG;
@@ -370,9 +400,7 @@ public class ConfigActivity extends Activity {
                                 * Intent's "data" field.
                                 */
                                 if (mIsPaused) {
-                                    mButton.setText("Pause");
-                                    mButton.setTextColor(0xFFFF0000);
-                                    mButton.setBackgroundResource(R.drawable.pause_button);
+                                    setButtonPause();
                                     Log.w(TAG, "Starting Wall Sensing Service");
                                     mIsPaused = false;
                                     mediaPlayer.start();
@@ -398,9 +426,7 @@ public class ConfigActivity extends Activity {
                                                     .putExtra(Constants.WALLSENSINGSERVICE_STOP, true);
                                     LocalBroadcastManager.getInstance(v.getContext()).sendBroadcast(stopServiceIntent);
                                     mediaPlayer.pause();
-                                    mButton.setText("Play");
-                                    mButton.setTextColor(0xFF00FF00);
-                                    mButton.setBackgroundResource(R.drawable.start_button);
+                                    setButtonStart();
                                     mIsPaused = true;
                                 }
                             }
@@ -425,9 +451,7 @@ public class ConfigActivity extends Activity {
                                                 // Puts the status into the Intent
                                                 .putExtra(Constants.WALLSENSINGSERVICE_STOP, true);
                                 LocalBroadcastManager.getInstance(view.getContext()).sendBroadcast(stopServiceIntent);
-                                mButton.setText("Play");
-                                mButton.setTextColor(0xFF00FF00);
-                                mButton.setBackgroundResource(R.drawable.start_button);
+                                setButtonStart();
                                 mIsPaused = true;
                             }
                             if(mediaPlayer != null){
