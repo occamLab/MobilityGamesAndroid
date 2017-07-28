@@ -368,7 +368,7 @@ public class CaneGameActivity extends Activity implements OnItemSelectedListener
             public void onClick(View view) {
                 // Pause the Game
                 if(mIsPaused == false){
-                    startStopButton.setText("Start Game");
+                    setButtonPause();
                     mIsPaused = true;
                 }
                 // Release the Media Player
@@ -523,7 +523,7 @@ public class CaneGameActivity extends Activity implements OnItemSelectedListener
                         public void onClick(View v) {
 
                             if (mIsPaused) {
-                                startStopButton.setText("Pause Game");
+                                setButtonPause();
                                 mIsPaused = false;
 
                                 //Start the audio thread
@@ -532,8 +532,7 @@ public class CaneGameActivity extends Activity implements OnItemSelectedListener
                             }
                             else {
                                 mediaPlayer.pause();
-                                startStopButton.setText("Start Game");
-                                mIsPaused = true;
+                                setButtonStart();
                             }
                         }
 
@@ -574,4 +573,25 @@ public class CaneGameActivity extends Activity implements OnItemSelectedListener
         doRewardAt.put(i, true);
         rewardAtCheckBox.setChecked(true);
     };
+
+    //Set the play/puase button ready to go
+    public void setButtonStart()
+    {
+        startStopButton.setText("Play");
+        startStopButton.setTextColor(0xFF00FF00); //green
+        startStopButton.setBackgroundResource(R.drawable.start_button);
+    }
+
+    public void setButtonPause()
+    {
+        startStopButton.setText("Pause");
+        startStopButton.setTextColor(0xFFFF0000); //red
+        startStopButton.setBackgroundResource(R.drawable.pause_button);
+    }
+
+    public void setButtonNeutral() {
+        startStopButton.setText("Play");
+        startStopButton.setTextColor(0xFF808080); // gray
+        startStopButton.setBackgroundResource(R.drawable.neutral_button);
+    }
 }
