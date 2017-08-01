@@ -74,9 +74,14 @@ public class CaneGameActivity extends Activity implements OnItemSelectedListener
     static final int SELECT_MUSIC_REQUEST = 10;
     private static final String CAMERA_PERMISSION = Manifest.permission.CAMERA;
     private static final int CAMERA_PERMISSION_CODE = 0;
+
     //
     // Tag Detection Variables
     //
+
+    // set to true if you want more verbose control of tag detection
+    boolean VERBOSE_UI_CONTROL = false;
+
     private boolean threadsStarted = false;
 
     private int globalSlot = 0;
@@ -292,8 +297,11 @@ public class CaneGameActivity extends Activity implements OnItemSelectedListener
                                 runOnUiThread(new Runnable() {
                                     @Override
                                     public void run() {
-                                        TextView textView = (TextView) findViewById(R.id.frame_rate_text);
-                                        textView.setText("Actual frame rate: " + String.format("%.1f", frameRateRatio*targetFrameRate));
+                                        if (VERBOSE_UI_CONTROL) {
+                                            TextView textView = (TextView) findViewById(R.id.frame_rate_text);
+                                            textView.setText("Actual frame rate: " + String.format("%.1f", frameRateRatio*targetFrameRate));
+                                        }
+
                                         // the fisheye image uses a stride that is not the same as the image width
                                         int[] strides = {fisheyeStride[0], fisheyeStride[0]};
                                         YuvImage fisheyeFrame = new YuvImage(fisheyePixels,
@@ -348,16 +356,29 @@ public class CaneGameActivity extends Activity implements OnItemSelectedListener
         setContentView(R.layout.activity_main);
         setTitle(R.string.app_name);
 
-        Spinner frameRateSpinner = (Spinner)findViewById(R.id.frame_rate_spinner);
-        Integer[] items = new Integer[30];
-        for (int i = 0; i < items.length; i++) {
-            items[i] = i+1;
+        if (VERBOSE_UI_CONTROL) {
+            Spinner frameRateSpinner = (Spinner)findViewById(R.id.frame_rate_spinner);
+            Integer[] items = new Integer[30];
+            for (int i = 0; i < items.length; i++) {
+                items[i] = i+1;
+            }
+            ArrayAdapter<Integer> adapter = new ArrayAdapter<Integer>(this,android.R.layout.simple_spinner_item, items);
+            frameRateSpinner.setAdapter(adapter);
+            frameRateSpinner.setSelection(((int)targetFrameRate) - 1);      // subtract 1 since setSelection is by index, not by value
+            frameRateSpinner.setOnItemSelectedListener(this);
+        }
+        else {
+            // Hide the Verbose UI Elements
+            TextView HelpTextView = (TextView) findViewById(R.id.frame_spinner_help);
+            HelpTextView.setVisibility(View.INVISIBLE);
+
+            Spinner frameRateSpinner = (Spinner)findViewById(R.id.frame_rate_spinner);
+            frameRateSpinner.setVisibility(View.INVISIBLE);
+
+            TextView rateTextView = (TextView) findViewById(R.id.frame_rate_text);
+            rateTextView.setVisibility(View.INVISIBLE);
         }
 
-        ArrayAdapter<Integer> adapter = new ArrayAdapter<Integer>(this,android.R.layout.simple_spinner_item, items);
-        frameRateSpinner.setAdapter(adapter);
-        frameRateSpinner.setSelection(((int)targetFrameRate) - 1);      // subtract 1 since setSelection is by index, not by value
-        frameRateSpinner.setOnItemSelectedListener(this);
 
         startStopButton = (Button) findViewById(R.id.startStopButton);
 
