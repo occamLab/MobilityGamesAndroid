@@ -74,9 +74,14 @@ public class CaneGameActivity extends Activity implements OnItemSelectedListener
     static final int SELECT_MUSIC_REQUEST = 10;
     private static final String CAMERA_PERMISSION = Manifest.permission.CAMERA;
     private static final int CAMERA_PERMISSION_CODE = 0;
+
     //
     // Tag Detection Variables
     //
+
+    // set to true if you want more verbose control of tag detection
+    boolean VERBOSE_UI_CONTROL = false;
+
     private boolean threadsStarted = false;
 
     private int globalSlot = 0;
@@ -122,7 +127,7 @@ public class CaneGameActivity extends Activity implements OnItemSelectedListener
     public double tip2TagDistance = 29 * 0.0254;
     private double canePositionY;
     private double prevCanePositionY;
-    private Set<Integer> rewardIncrements = new HashSet<Integer>(Arrays.asList(10, 20, 50));
+    private Set<Integer> rewardIncrements = new HashSet<Integer>(Arrays.asList(10, 20, 50, 100, 200));
     private ArrayMap<Integer, Boolean> doRewardAt = new ArrayMap<>();
     private ArrayMap<Integer, CheckBox> rewardAtCheckBoxes = new ArrayMap<>();
 
@@ -292,8 +297,11 @@ public class CaneGameActivity extends Activity implements OnItemSelectedListener
                                 runOnUiThread(new Runnable() {
                                     @Override
                                     public void run() {
-                                        TextView textView = (TextView) findViewById(R.id.frame_rate_text);
-                                        textView.setText("Actual frame rate: " + String.format("%.1f", frameRateRatio*targetFrameRate));
+                                        if (VERBOSE_UI_CONTROL) {
+                                            TextView textView = (TextView) findViewById(R.id.frame_rate_text);
+                                            textView.setText("Actual frame rate: " + String.format("%.1f", frameRateRatio*targetFrameRate));
+                                        }
+
                                         // the fisheye image uses a stride that is not the same as the image width
                                         int[] strides = {fisheyeStride[0], fisheyeStride[0]};
                                         YuvImage fisheyeFrame = new YuvImage(fisheyePixels,
@@ -348,16 +356,29 @@ public class CaneGameActivity extends Activity implements OnItemSelectedListener
         setContentView(R.layout.activity_main);
         setTitle(R.string.app_name);
 
-        Spinner frameRateSpinner = (Spinner)findViewById(R.id.frame_rate_spinner);
-        Integer[] items = new Integer[30];
-        for (int i = 0; i < items.length; i++) {
-            items[i] = i+1;
+        if (VERBOSE_UI_CONTROL) {
+            Spinner frameRateSpinner = (Spinner)findViewById(R.id.frame_rate_spinner);
+            Integer[] items = new Integer[30];
+            for (int i = 0; i < items.length; i++) {
+                items[i] = i+1;
+            }
+            ArrayAdapter<Integer> adapter = new ArrayAdapter<Integer>(this,android.R.layout.simple_spinner_item, items);
+            frameRateSpinner.setAdapter(adapter);
+            frameRateSpinner.setSelection(((int)targetFrameRate) - 1);      // subtract 1 since setSelection is by index, not by value
+            frameRateSpinner.setOnItemSelectedListener(this);
+        }
+        else {
+            // Hide the Verbose UI Elements
+            TextView HelpTextView = (TextView) findViewById(R.id.frame_spinner_help);
+            HelpTextView.setVisibility(View.INVISIBLE);
+
+            Spinner frameRateSpinner = (Spinner)findViewById(R.id.frame_rate_spinner);
+            frameRateSpinner.setVisibility(View.INVISIBLE);
+
+            TextView rateTextView = (TextView) findViewById(R.id.frame_rate_text);
+            rateTextView.setVisibility(View.INVISIBLE);
         }
 
-        ArrayAdapter<Integer> adapter = new ArrayAdapter<Integer>(this,android.R.layout.simple_spinner_item, items);
-        frameRateSpinner.setAdapter(adapter);
-        frameRateSpinner.setSelection(((int)targetFrameRate) - 1);      // subtract 1 since setSelection is by index, not by value
-        frameRateSpinner.setOnItemSelectedListener(this);
 
         startStopButton = (Button) findViewById(R.id.startStopButton);
 
@@ -403,6 +424,11 @@ public class CaneGameActivity extends Activity implements OnItemSelectedListener
                     setRewardCheckBoxes(i, R.id.rewardAt20);
                 case 50:
                     setRewardCheckBoxes(i, R.id.rewardAt50);
+                case 100:
+                    setRewardCheckBoxes(i, R.id.rewardAt100);
+                case 200:
+                    setRewardCheckBoxes(i, R.id.rewardAt200);
+
             }
         }
     }
@@ -534,6 +560,7 @@ public class CaneGameActivity extends Activity implements OnItemSelectedListener
                                 mediaPlayer.pause();
                                 mIsPaused = true;
                                 setButtonStart();
+                                sweepCounter = 0;
 
                             }
                         }
@@ -545,11 +572,11 @@ public class CaneGameActivity extends Activity implements OnItemSelectedListener
 
             });
             mediaPlayer.prepareAsync();
-            setButtonStart();
         }
         catch (IOException e) {
             e.printStackTrace();
         }
+        setButtonStart();
     }
 
     public CompoundButton.OnCheckedChangeListener rewardAtCheckBoxListener = new CompoundButton.OnCheckedChangeListener() {
@@ -564,6 +591,10 @@ public class CaneGameActivity extends Activity implements OnItemSelectedListener
                     doRewardAt.put(20, isChecked);
                 case R.id.rewardAt50:
                     doRewardAt.put(50, isChecked);
+                case R.id.rewardAt100:
+                    doRewardAt.put(100, isChecked);
+                case R.id.rewardAt200:
+                    doRewardAt.put(200, isChecked);
             }
         }
 
@@ -580,20 +611,20 @@ public class CaneGameActivity extends Activity implements OnItemSelectedListener
     //Set the play/puase button ready to go
     public void setButtonStart()
     {
-        startStopButton.setText("Play");
+        startStopButton.setText(R.string.start_button);
         startStopButton.setTextColor(0xFF00FF00); //green
         startStopButton.setBackgroundResource(R.drawable.start_button);
     }
 
     public void setButtonPause()
     {
-        startStopButton.setText("Pause");
+        startStopButton.setText(R.string.pause_button);
         startStopButton.setTextColor(0xFFFF0000); //red
         startStopButton.setBackgroundResource(R.drawable.pause_button);
     }
 
     public void setButtonNeutral() {
-        startStopButton.setText("Play");
+        startStopButton.setText(R.string.neutral_button);
         startStopButton.setTextColor(0xFF808080); // gray
         startStopButton.setBackgroundResource(R.drawable.neutral_button);
     }
