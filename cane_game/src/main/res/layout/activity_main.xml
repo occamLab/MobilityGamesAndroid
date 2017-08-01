@@ -49,8 +49,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_below="@id/controlButtons"
-            android:paddingLeft="20dp"
-            android:paddingRight="20dp"
+            android:layout_centerHorizontal="true"
             android:paddingBottom="10dp">
 
             <TextView
@@ -58,6 +57,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_alignParentLeft="true"
+                android:paddingLeft="10dp"
+                android:paddingRight="10dp"
                 android:textSize="25sp"
                 android:text="Play reward at ___ sweeps:" />
 
@@ -72,7 +73,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="10"
-                    android:textSize="30sp"
+                    android:textSize="@dimen/checkbox_text_size"
                     android:button="@drawable/reward_checkbox_design"
                     android:layout_alignParentLeft="true"/>
 
@@ -81,7 +82,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="20"
-                    android:textSize="30sp"
+                    android:textSize="@dimen/checkbox_text_size"
                     android:button="@drawable/reward_checkbox_design"
                     android:layout_toRightOf="@id/rewardAt10" />
 
@@ -90,9 +91,27 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="50"
-                    android:textSize="30sp"
+                    android:textSize="@dimen/checkbox_text_size"
                     android:button="@drawable/reward_checkbox_design"
                     android:layout_toRightOf="@id/rewardAt20"/>
+
+                <CheckBox
+                    android:id="@+id/rewardAt100"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="100"
+                    android:textSize="@dimen/checkbox_text_size"
+                    android:button="@drawable/reward_checkbox_design"
+                    android:layout_toRightOf="@id/rewardAt50"/>
+
+                <CheckBox
+                    android:id="@+id/rewardAt200"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="200"
+                    android:textSize="@dimen/checkbox_text_size"
+                    android:button="@drawable/reward_checkbox_design"
+                    android:layout_toRightOf="@id/rewardAt100"/>
 
             </RelativeLayout>
         </RelativeLayout>

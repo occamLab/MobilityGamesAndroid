@@ -127,7 +127,7 @@ public class CaneGameActivity extends Activity implements OnItemSelectedListener
     public double tip2TagDistance = 29 * 0.0254;
     private double canePositionY;
     private double prevCanePositionY;
-    private Set<Integer> rewardIncrements = new HashSet<Integer>(Arrays.asList(10, 20, 50));
+    private Set<Integer> rewardIncrements = new HashSet<Integer>(Arrays.asList(10, 20, 50, 100, 200));
     private ArrayMap<Integer, Boolean> doRewardAt = new ArrayMap<>();
     private ArrayMap<Integer, CheckBox> rewardAtCheckBoxes = new ArrayMap<>();
 
@@ -424,6 +424,11 @@ public class CaneGameActivity extends Activity implements OnItemSelectedListener
                     setRewardCheckBoxes(i, R.id.rewardAt20);
                 case 50:
                     setRewardCheckBoxes(i, R.id.rewardAt50);
+                case 100:
+                    setRewardCheckBoxes(i, R.id.rewardAt100);
+                case 200:
+                    setRewardCheckBoxes(i, R.id.rewardAt200);
+
             }
         }
     }
@@ -586,6 +591,10 @@ public class CaneGameActivity extends Activity implements OnItemSelectedListener
                     doRewardAt.put(20, isChecked);
                 case R.id.rewardAt50:
                     doRewardAt.put(50, isChecked);
+                case R.id.rewardAt100:
+                    doRewardAt.put(100, isChecked);
+                case R.id.rewardAt200:
+                    doRewardAt.put(200, isChecked);
             }
         }
 
