@@ -116,19 +116,19 @@ public class CaneGameActivity extends Activity implements OnItemSelectedListener
     private boolean caneGameHasStarted = false;
     private boolean mIsPaused = true;
     Button startStopButton = null;
-    Button addMusicButton = null;
-    Spinner selectMusicSpinner = null;
-    ArrayAdapter<String> arrayAdapter;
-
 
     //
     // Sound Specific Variables
     //
+    Button addMusicButton = null;
+    Spinner selectMusicSpinner = null;
+    ArrayAdapter<String> soundArrayAdapter;
+    String musicStorageFolder;
     Uri uriSound;
     Context contextSound;
     MediaPlayer mediaPlayer = null;
     public TextToSpeech textToSpeech;
-    String [] soundFilePaths;
+    String [] soundFileNames;
 
     //
     // Cane Specific Variables
@@ -441,24 +441,30 @@ public class CaneGameActivity extends Activity implements OnItemSelectedListener
         if(requestCode == SELECT_MUSIC_REQUEST && resultCode == RESULT_OK) {
             ArrayList<File> Files = (ArrayList<File>) data.getSerializableExtra(
                     FolderSelectionActivity.FILES_TO_UPLOAD); //file array list
-            soundFilePaths = new String[Files.size()]; //string array
+            soundFileNames = new String[Files.size()]; //string array
             int i = 0;
 
             for(File file : Files){
-                //String fileName = file.getName();
+                String fileName = file.getName();
                 String uri = file.getAbsolutePath();
-                soundFilePaths[i] = uri.toString(); //storing the selected file's paths to string array files_paths
+
+                // Assumes all music files are in a non-nested location in /Music
+                if (musicStorageFolder == null) {
+                    musicStorageFolder = pathDirName(uri);
+                }
+
+                soundFileNames[i] = fileName;
                 i++;
             }
 
             contextSound = this;
 
-            arrayAdapter = new ArrayAdapter<String>(this, R.layout.spinner_item, soundFilePaths);
-            selectMusicSpinner.setAdapter(arrayAdapter);
+            soundArrayAdapter = new ArrayAdapter<String>(this, R.layout.spinner_item, soundFileNames);
+            selectMusicSpinner.setAdapter(soundArrayAdapter);
             selectMusicSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
                 public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                     Object item = parent.getItemAtPosition(position);
-                    uriSound = Uri.parse(item.toString());
+                    uriSound = Uri.parse(combinePath(musicStorageFolder, item.toString()));
                     setVariable(contextSound, uriSound);
                 }
                 public void onNothingSelected(AdapterView<?> parent) {
@@ -645,5 +651,17 @@ public class CaneGameActivity extends Activity implements OnItemSelectedListener
         startStopButton.setText(R.string.neutral_button);
         startStopButton.setTextColor(0xFF808080); // gray
         startStopButton.setBackgroundResource(R.drawable.neutral_button);
+    }
+
+    public static String combinePath (String path1, String path2) {
+        File file1 = new File(path1);
+        File file2 = new File(file1, path2);
+        return file2.getPath();
+    }
+
+    public static String pathDirName (String filepath) {
+        File file = new File(filepath);
+        File parentDir = file.getParentFile(); // to get the parent dir
+        return file.getParent(); // to get the parent dir name
     }
 }
