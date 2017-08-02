@@ -51,4 +51,5 @@ dependencies {
     // of Estimote Android SDK; you'll find the latest version number on:
     //   https://github.com/Estimote/Android-SDK/releases
     compile project(':openCVLibrary310')
+    compile project(path: ':Android-Multiple-file-Selector-Dialog')
 }

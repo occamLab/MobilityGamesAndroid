@@ -8,5 +8,6 @@
     <string name="pause_button">Stop</string>
     <string name="neutral_button">Play</string>
     <string name="selectmusic">Select Music</string>
+    <string name="addmusic">Add Music</string>
     <string name="BLACK">#ff000000</string>
 </resources>
