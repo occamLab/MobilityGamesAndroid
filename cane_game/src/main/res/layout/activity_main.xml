@@ -27,7 +27,10 @@
                 android:textColor="#FFFFFF"
                 android:background="@drawable/roundedbutton"
                 android:padding="@dimen/control_button_padding"
-                android:layout_margin="10dp"/>
+                android:layout_marginTop="@dimen/control_button_vert_margin"
+                android:layout_marginBottom="@dimen/control_button_vert_margin"
+                android:layout_marginRight="@dimen/control_button_horz_margin"
+                android:layout_marginLeft="@dimen/control_button_horz_margin"/>
 
             <Button
                 android:layout_width="wrap_content"
@@ -41,7 +44,10 @@
                 android:paddingBottom="@dimen/control_button_padding"
                 android:paddingLeft="@dimen/control_button_padding"
                 android:paddingRight="@dimen/control_button_padding"
-                android:layout_margin="10dp"
+                android:layout_marginLeft="@dimen/control_button_horz_margin"
+                android:layout_marginRight="@dimen/control_button_horz_margin"
+                android:layout_marginTop="@dimen/control_button_vert_margin"
+                android:layout_marginBottom="@dimen/control_button_vert_margin"
                 android:background="@drawable/neutral_button" />
         </RelativeLayout>
 
@@ -50,8 +56,9 @@
             android:layout_height="wrap_content"
             android:background="@drawable/roundedbutton"
             android:id="@+id/selectMusic"
-            android:layout_marginLeft="10dp"
-            android:layout_marginRight="10dp"
+            android:layout_marginLeft="@dimen/control_button_horz_margin"
+            android:layout_marginRight="@dimen/control_button_horz_margin"
+            android:layout_marginBottom="@dimen/control_button_horz_margin"
             android:padding="@dimen/control_button_padding"
             android:layout_below="@id/controlButtons"
             android:popupBackground="#000000">
@@ -61,10 +68,11 @@
 
         <RelativeLayout
             android:id="@+id/rewardAtLayout"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_below="@id/selectMusic"
-            android:layout_centerHorizontal="true"
+            android:layout_marginLeft="@dimen/control_button_horz_margin"
+            android:layout_marginRight="@dimen/control_button_horz_margin"
             android:paddingBottom="10dp">
 
             <TextView
