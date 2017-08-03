@@ -483,4 +483,15 @@ public class WallSensingService extends IntentService {
                 (Math.abs(savedPlaneModel[2] - planeModel[2]) < abcMatchThresh) &&
                 (Math.abs(savedPlaneModel[2] - planeModel[2]) < dMatchThresh));
     }
+
+    /*
+     * TODO: implement PassedPlane function to find walls that set deeper than current walls
+     *             -->
+     * Good __________
+     *                \__ --> ___________
+     * vs
+     *             -->    -->
+     * Bad  __________
+     *                \__________________
+     */
 }
