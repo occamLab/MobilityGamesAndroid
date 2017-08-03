@@ -51,6 +51,9 @@ public class WallSensingService extends IntentService {
     private double abcMatchThresh = 0.75;
     private double dMatchThresh = 0.2;
 
+    // Threshold used to decide if plane model represents a vertical plane (i.e. a wall)
+    private double verticalThreshold = 0.05;
+
     public WallSensingService() {
         super("WallSensingService");
 
@@ -250,7 +253,7 @@ public class WallSensingService extends IntentService {
 
                         // Choose walls (not ceilings) + largest plane (the one with most inliers)
                         int nInliers = numInliers(pointCloud.points, planeModel.planeModel);
-                        if ((Math.abs(planeInOdom[2]) < 0.04) && (nInliers > mostInliers)) {
+                        if ((Math.abs(planeInOdom[2]) < verticalThreshold) && (nInliers > mostInliers)) {
                             mostInliers = nInliers;
                             bestPlaneModelThisTs = planeInOdomDouble;
                         }
