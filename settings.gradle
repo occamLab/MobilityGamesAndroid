@@ -1,4 +1,4 @@
-include ':MidiTools', ':com.commonsware.cwac.merge', ':com.squareup.picasso'
+include ':MidiTools'
 include ':WallTrailingGame'
 include ':openCVLibrary310'
 include ':cane_game'
