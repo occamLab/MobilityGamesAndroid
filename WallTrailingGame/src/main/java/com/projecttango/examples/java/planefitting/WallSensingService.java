@@ -44,6 +44,12 @@ public class WallSensingService extends IntentService {
     private TangoPointCloudManager mPointCloudManager = new TangoPointCloudManager();
     private double mLastPointCloudTimestamp;
     private int mDisplayRotation = Surface.ROTATION_0;
+    private double[] mSavedPlaneModel;
+
+    // amount of difference there can be between parameters in plane model
+    // without assuming the current wall is different from the previous wall.
+    private double abcMatchThresh = 0.75;
+    private double dMatchThresh = 0.2;
 
     public WallSensingService() {
         super("WallSensingService");
@@ -224,7 +230,7 @@ public class WallSensingService extends IntentService {
 
             // get largest plane
             int mostInliers = 0;
-            int planesUsed = 0;
+            double[] bestPlaneModelThisTs = null;
             float[] us = {0.5f, 0.4f, 0.6f, 0.2f, 0.8f, 0.0f, 1.0f};
             float[] vs = {0.5f, 0.4f, 0.6f, 0.2f, 0.8f, 0.0f, 1.0f};
             for (float u : us) {
@@ -245,23 +251,8 @@ public class WallSensingService extends IntentService {
                         // Choose walls (not ceilings) + largest plane (the one with most inliers)
                         int nInliers = numInliers(pointCloud.points, planeModel.planeModel);
                         if ((Math.abs(planeInOdom[2]) < 0.04) && (nInliers > mostInliers)) {
-
                             mostInliers = nInliers;
-                            float[] depthTPlane = convertPlaneModelToMatrix(planeModel);
-                            double newdist = planeDistance(planeInOdomDouble, odomPose.translation);
-                            Log.w(TAG, "Distance to Wall: " + Double.toString(newdist));
-                            planesUsed++;
-
-                            /* Creates a new Intent containing a Uri object
-                             * BROADCAST_ACTION is a custom Intent action
-                             */
-                            Intent localIntent =
-                                    new Intent(Constants.BROADCAST_WALLDISTANCE)
-                                            // Puts the status into the Intent
-                                            .putExtra(Constants.WALLDISTANCE, newdist);
-                            // Broadcasts the Intent to receivers in this app.
-                            LocalBroadcastManager.getInstance(this).sendBroadcast(localIntent);
-
+                            bestPlaneModelThisTs = planeInOdomDouble;
                         }
 
                     } catch(TangoException t){
@@ -276,7 +267,47 @@ public class WallSensingService extends IntentService {
 
             }
 
-            if (planesUsed == 0) {
+            // Found good candidate plane during grid search
+            if (bestPlaneModelThisTs != null) {
+
+                if (mSavedPlaneModel != null) {
+                    boolean match = planesMatch(mSavedPlaneModel, bestPlaneModelThisTs);
+                    if (match) {
+                        Log.i(TAG, "Matching Wall");
+                    }
+                    else {
+                        Log.i(TAG, "New Wall");
+                        double oldWallDist = planeDistance(mSavedPlaneModel, odomPose.translation);
+                        double newWallDist = planeDistance(bestPlaneModelThisTs,
+                                                           odomPose.translation);
+                        // New Wall is closer
+                        if (newWallDist < oldWallDist) {
+                            mSavedPlaneModel = bestPlaneModelThisTs;
+                        }
+                    }
+                }
+                else {
+                    mSavedPlaneModel = bestPlaneModelThisTs;
+                }
+            }
+
+            if (mSavedPlaneModel != null)
+            {
+                // Save and Publish Distance to Wall
+                double newdist = planeDistance(mSavedPlaneModel, odomPose.translation);
+                /* Creates a new Intent containing a Uri object
+                 * BROADCAST_ACTION is a custom Intent action
+                 */
+                Intent localIntent =
+                        new Intent(Constants.BROADCAST_WALLDISTANCE)
+                                // Puts the status into the Intent
+                                .putExtra(Constants.WALLDISTANCE, newdist);
+                // Broadcasts the Intent to receivers in this app.
+                LocalBroadcastManager.getInstance(this).sendBroadcast(localIntent);
+                Log.w(TAG, "Distance to Wall: " + Double.toString(newdist));
+            }
+            // We still have never seen a plane
+            else {
                 Toast.makeText(getApplicationContext(),
                         R.string.failed_measurement,
                         Toast.LENGTH_SHORT).show();
@@ -445,5 +476,11 @@ public class WallSensingService extends IntentService {
         return count;
     }
 
+    private boolean planesMatch(double[] savedPlaneModel, double[] planeModel) {
 
+        return ((Math.abs(savedPlaneModel[0] - planeModel[0]) < abcMatchThresh) &&
+                (Math.abs(savedPlaneModel[1] - planeModel[1]) < abcMatchThresh) &&
+                (Math.abs(savedPlaneModel[2] - planeModel[2]) < abcMatchThresh) &&
+                (Math.abs(savedPlaneModel[2] - planeModel[2]) < dMatchThresh));
+    }
 }
