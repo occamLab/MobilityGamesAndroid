@@ -29,11 +29,14 @@ import android.graphics.YuvImage;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.net.Uri;
+import android.os.Build;
 import android.os.IBinder;
 import android.app.Activity;
 import android.os.Bundle;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Locale;
@@ -47,7 +50,6 @@ import android.graphics.Paint;
 import android.graphics.Color;
 import android.graphics.Matrix;
 import android.speech.tts.TextToSpeech;
-import android.support.v4.content.ContextCompat;
 import android.support.v4.util.ArrayMap;
 import android.util.Log;
 import android.view.View;
@@ -65,6 +67,11 @@ import android.content.ServiceConnection;
 import android.support.v4.app.ActivityCompat;
 import android.app.AlertDialog;
 
+import paul.arian.fileselector.FileSelectionActivity;
+import paul.arian.fileselector.FolderSelectionActivity;
+
+import static android.Manifest.permission.READ_EXTERNAL_STORAGE;
+
 
 /**
  * Main activity controls Tango lifecycle.
@@ -73,7 +80,8 @@ public class CaneGameActivity extends Activity implements OnItemSelectedListener
     public static final String TAG = CaneGameActivity.class.getSimpleName();
     static final int SELECT_MUSIC_REQUEST = 10;
     private static final String CAMERA_PERMISSION = Manifest.permission.CAMERA;
-    private static final int CAMERA_PERMISSION_CODE = 0;
+    private int PERMISSION_ALL = 1;
+    private String[] PERMISSIONS = {CAMERA_PERMISSION, READ_EXTERNAL_STORAGE};
 
     //
     // Tag Detection Variables
@@ -108,16 +116,19 @@ public class CaneGameActivity extends Activity implements OnItemSelectedListener
     private boolean caneGameHasStarted = false;
     private boolean mIsPaused = true;
     Button startStopButton = null;
-    Button selectMusicButton = null;
-
 
     //
     // Sound Specific Variables
     //
+    Button addMusicButton = null;
+    Spinner selectMusicSpinner = null;
+    ArrayAdapter<String> soundArrayAdapter;
+    String musicStorageFolder;
     Uri uriSound;
     Context contextSound;
     MediaPlayer mediaPlayer = null;
     public TextToSpeech textToSpeech;
+    String [] soundFileNames;
 
     //
     // Cane Specific Variables
@@ -134,36 +145,26 @@ public class CaneGameActivity extends Activity implements OnItemSelectedListener
 
     /**
      * Check to see if we have the necessary permissions for this app; ask for them if we don't.
-     *
-     * @return True if we have the necessary permissions, false if we don't.
      */
-    private boolean checkAndRequestPermissions() {
-        if (!hasCameraPermission()) {
-            requestCameraPermission();
-            return false;
+    private void checkAndRequestPermissions() {
+        if(!hasPermissions(this, PERMISSIONS)){
+            ActivityCompat.requestPermissions(this, PERMISSIONS, PERMISSION_ALL);
         }
-        return true;
     }
 
 
     /**
      * Check to see of we have the necessary permissions for this app.
      */
-    private boolean hasCameraPermission() {
-        return ContextCompat.checkSelfPermission(this, CAMERA_PERMISSION) ==
-                PackageManager.PERMISSION_GRANTED;
-    }
-
-    /**
-     * Request the necessary permissions for this app.
-     */
-    private void requestCameraPermission() {
-        if (ActivityCompat.shouldShowRequestPermissionRationale(this, CAMERA_PERMISSION)) {
-            showRequestPermissionRationale();
-        } else {
-            ActivityCompat.requestPermissions(this, new String[]{CAMERA_PERMISSION},
-                    CAMERA_PERMISSION_CODE);
+    private static boolean hasPermissions(Context context, String... permissions) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && context != null && permissions != null) {
+            for (String permission : permissions) {
+                if (ActivityCompat.checkSelfPermission(context, permission) != PackageManager.PERMISSION_GRANTED) {
+                    return false;
+                }
+            }
         }
+        return true;
     }
 
     /**
@@ -172,12 +173,12 @@ public class CaneGameActivity extends Activity implements OnItemSelectedListener
      */
     private void showRequestPermissionRationale() {
         final AlertDialog dialog = new AlertDialog.Builder(this)
-                .setMessage("Cane game requires camera permission")
+                .setMessage("Cane game requires camera and external storage permissions")
                 .setPositiveButton("Ok", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
                         ActivityCompat.requestPermissions(CaneGameActivity.this,
-                                new String[]{CAMERA_PERMISSION}, CAMERA_PERMISSION_CODE);
+                                PERMISSIONS, PERMISSION_ALL);
                     }
                 })
                 .create();
@@ -276,9 +277,9 @@ public class CaneGameActivity extends Activity implements OnItemSelectedListener
                             int startSlot = (int) Math.floor(startingTimeStamp*targetFrameRate);
                             final double frameRateRatio = framesProcessed/((float)globalSlot - startSlot);
                             System.out.println("Frame rate goal " + targetFrameRate + " ratio " + frameRateRatio);
-                            Log.i(TAG, "x: " + Double.toString(tagPosition[0])
-                                    + " y: " + Double.toString(tagPosition[1])
-                                    + " z: " + Double.toString(tagPosition[2]));
+//                            Log.i(TAG, "x: " + Double.toString(tagPosition[0])
+//                                    + " y: " + Double.toString(tagPosition[1])
+//                                    + " z: " + Double.toString(tagPosition[2]));
 
                             synchronized (updateImageViewLock) {
                                 if (ts < lastDisplayedImageTS) {
@@ -383,8 +384,9 @@ public class CaneGameActivity extends Activity implements OnItemSelectedListener
         startStopButton = (Button) findViewById(R.id.startStopButton);
 
         //Select the music you want
-        selectMusicButton = (Button) findViewById(R.id.selectMusic);
-        selectMusicButton.setOnClickListener(new View.OnClickListener() {
+        selectMusicSpinner = (Spinner) findViewById(R.id.selectMusic);
+        addMusicButton = (Button) findViewById(R.id.addMusic);
+        addMusicButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 // Pause the Game
@@ -398,8 +400,9 @@ public class CaneGameActivity extends Activity implements OnItemSelectedListener
                 }
                 // Open the Pick External Music File activity
                 mediaPlayer = null;
-                Intent intent = new Intent(Intent.ACTION_PICK,
-                        android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI);
+
+
+                Intent intent = new Intent(getBaseContext(), FileSelectionActivity.class);
                 startActivityForResult(intent, SELECT_MUSIC_REQUEST);
             }
         });
@@ -433,14 +436,40 @@ public class CaneGameActivity extends Activity implements OnItemSelectedListener
         }
     }
 
-
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if(requestCode == SELECT_MUSIC_REQUEST && resultCode == RESULT_OK) {
+            ArrayList<File> Files = (ArrayList<File>) data.getSerializableExtra(
+                    FolderSelectionActivity.FILES_TO_UPLOAD); //file array list
+            soundFileNames = new String[Files.size()]; //string array
+            int i = 0;
 
-        if(resultCode == RESULT_OK && requestCode == SELECT_MUSIC_REQUEST){
-            uriSound = data.getData();
+            for(File file : Files){
+                String fileName = file.getName();
+                String uri = file.getAbsolutePath();
+
+                // Assumes all music files are in a non-nested location in /Music
+                if (musicStorageFolder == null) {
+                    musicStorageFolder = pathDirName(uri);
+                }
+
+                soundFileNames[i] = fileName;
+                i++;
+            }
+
             contextSound = this;
-            setVariable(contextSound, uriSound);
+
+            soundArrayAdapter = new ArrayAdapter<String>(this, R.layout.spinner_item, soundFileNames);
+            selectMusicSpinner.setAdapter(soundArrayAdapter);
+            selectMusicSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                    Object item = parent.getItemAtPosition(position);
+                    uriSound = Uri.parse(combinePath(musicStorageFolder, item.toString()));
+                    setVariable(contextSound, uriSound);
+                }
+                public void onNothingSelected(AdapterView<?> parent) {
+                }
+            });
         }
     }
 
@@ -512,18 +541,10 @@ public class CaneGameActivity extends Activity implements OnItemSelectedListener
             // thread was interrupted... no big deal
         }
     }
-    
+
     public void setVariable(Context context, Uri uri){
-        if (context.checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-            // Should we show an explanation?
-            if (shouldShowRequestPermissionRationale(Manifest.permission.READ_EXTERNAL_STORAGE)) {
-                // Explain to the user why we need to read the contacts
-            }
-            requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, 11331);
-            // MY_PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE is an
-            // app-defined int constant that should be quite unique
-        }
-        mediaPlayer =  new MediaPlayer();
+
+        mediaPlayer = new MediaPlayer();
         setVolumeControlStream(AudioManager.STREAM_MUSIC);
         mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
 
@@ -576,7 +597,10 @@ public class CaneGameActivity extends Activity implements OnItemSelectedListener
         catch (IOException e) {
             e.printStackTrace();
         }
-        setButtonStart();
+
+        if (mIsPaused) {
+            setButtonStart();
+        }
     }
 
     public CompoundButton.OnCheckedChangeListener rewardAtCheckBoxListener = new CompoundButton.OnCheckedChangeListener() {
@@ -627,5 +651,17 @@ public class CaneGameActivity extends Activity implements OnItemSelectedListener
         startStopButton.setText(R.string.neutral_button);
         startStopButton.setTextColor(0xFF808080); // gray
         startStopButton.setBackgroundResource(R.drawable.neutral_button);
+    }
+
+    public static String combinePath (String path1, String path2) {
+        File file1 = new File(path1);
+        File file2 = new File(file1, path2);
+        return file2.getPath();
+    }
+
+    public static String pathDirName (String filepath) {
+        File file = new File(filepath);
+        File parentDir = file.getParentFile(); // to get the parent dir
+        return file.getParent(); // to get the parent dir name
     }
 }

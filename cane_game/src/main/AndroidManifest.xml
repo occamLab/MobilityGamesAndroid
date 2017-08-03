@@ -44,6 +44,10 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity
+            android:name="paul.arian.fileselector.FileSelectionActivity" />
+        <activity
+            android:name="paul.arian.fileselector.FolderSelectionActivity" />
     </application>
 
 </manifest>
