@@ -20,6 +20,20 @@ Then, run `git submodule update`
 Make sure you have ndk (native development kit) installed, since we rely on some C and C++ code.
 [https://developer.android.com/ndk/guides/index.html](https://developer.android.com/ndk/guides/index.html)
 
+## Build JNI
+
+You might need to manually build some of the JNI files, since sometimes Android Studio won't do it for us.
+
+From the root repo directory
+
+```bash
+# go to cane_game jni folder
+cd cane_game/src/main/jni/
+
+# run ndk-build. Default install directory of ndk is this path
+~/Android/Sdk/ndk-bundle/ndk-build
+```
+
 ## Download OpenCV Android SDK
 
 You can get an Occam Lab download, hosted on the Google Drive
